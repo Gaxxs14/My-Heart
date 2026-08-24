@@ -1,0 +1,55 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+Thumbs.db
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# Flutter / Dart
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/.pub-cache/
+app/.pub/
+app/build/
+app/ios/Flutter/Generated.xcconfig
+app/ios/Flutter/flutter_export_environment.sh
+app/ios/Flutter/App.framework
+app/ios/Flutter/Flutter.framework
+app/ios/Flutter/Flutter.podspec
+app/ios/Pods
+app/ios/.symlinks
+app/ios/profile
+app/ios/release
+app/android/.gradle
+app/android/local.properties
+app/android/app/Debug
+app/android/app/Profile
+app/android/app/Release
+app/windows/flutter/ephemeral
+app/linux/flutter/ephemeral
+app/macos/Flutter/ephemeral
+
+# Node.js / Server
+server/node_modules/
+server/dist/
+server/.env
+server/npm-debug.log*
+server/yarn-debug.log*
+server/yarn-error.log*

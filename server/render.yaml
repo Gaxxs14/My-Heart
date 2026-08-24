@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: my-heart-api
+    env: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Set this in Render dashboard from your Neon PostgreSQL connection string
+      - key: JWT_SECRET
+        generateValue: true
