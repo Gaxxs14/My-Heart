@@ -113,6 +113,67 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> quickStart({
+    required String name,
+    String? nickname,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _apiService.post('/auth/quick-start', {
+        'name': name,
+        'nickname': nickname,
+      });
+
+      await _apiService.setToken(res['token']);
+      _currentUser = res['user'];
+      _isAuthenticated = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> quickLink({
+    required String name,
+    required String pairingCode,
+    String? nickname,
+    DateTime? anniversaryDate,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _apiService.post('/auth/quick-link', {
+        'name': name,
+        'nickname': nickname,
+        'pairing_code': pairingCode,
+        'anniversary_date': anniversaryDate?.toIso8601String().split('T').first,
+      });
+
+      await _apiService.setToken(res['token']);
+      _currentUser = res['user'];
+      _isAuthenticated = true;
+      await checkAuthStatus();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> updateMood(String moodStatus, String moodIcon) async {
     try {
       await _apiService.patch('/auth/mood', {
