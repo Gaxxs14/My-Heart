@@ -298,7 +298,7 @@ class HomeDashboardScreen extends StatelessWidget {
                       const SizedBox(height: 16),
 
                       // 2. Love Counter (Hero card)
-                      _buildLoveCounterCard(context, couple, theme)
+                      _buildLoveCounterCard(context, couple, theme, auth.isPaired)
                           .animate(delay: 80.ms).fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0),
 
                       const SizedBox(height: 16),
@@ -789,9 +789,97 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  // ─── Love Counter Card ────────────────────────────────────────────────────
+  Widget _buildLoveCounterCard(BuildContext context, CoupleProvider couple, ThemeProvider theme, bool isPaired) {
+    if (!isPaired) {
+      return GestureDetector(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const PairingScreen()),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: theme.mainGradient,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            boxShadow: AppTheme.heroShadow,
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                    child: const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 14),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'NUESTRA HISTORIA DE AMOR',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.8,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                    child: const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 14),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Icon(Icons.favorite_rounded, color: Colors.white, size: 48)
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scale(begin: const Offset(1, 1), end: const Offset(1.15, 1.15), duration: 1200.ms),
+              const SizedBox(height: 12),
+              const Text(
+                'Tu Historia Comienza Aquí ✨',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Playfair Display',
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Vincula a tu pareja para empezar a contar cada día, hora y segundo juntos en tiempo real.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3))],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.link_rounded, color: theme.primaryColor, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Vincular Pareja Ahora 💕',
+                      style: TextStyle(
+                        color: theme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
-  Widget _buildLoveCounterCard(BuildContext context, CoupleProvider couple, ThemeProvider theme) {
     return GestureDetector(
       onTap: () => _pickAnniversaryDate(context, couple),
       child: Container(

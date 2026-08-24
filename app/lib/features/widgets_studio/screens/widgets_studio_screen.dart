@@ -8,24 +8,30 @@ import '../../../core/theme/app_theme.dart';
 class WidgetsStudioScreen extends StatelessWidget {
   const WidgetsStudioScreen({super.key});
 
-  Future<void> _pinLoveCounterWidget(BuildContext context, String names, int days) async {
+  Future<void> _pinWidget({
+    required BuildContext context,
+    required String providerName,
+    required Map<String, String> data,
+    required String successName,
+  }) async {
     try {
-      await HomeWidget.saveWidgetData<String>('couple_names', names);
-      await HomeWidget.saveWidgetData<String>('days_count', '$days');
-      await HomeWidget.saveWidgetData<String>('days_label', 'DÍAS JUNTOS');
+      for (final entry in data.entries) {
+        await HomeWidget.saveWidgetData<String>(entry.key, entry.value);
+      }
       await HomeWidget.updateWidget(
-        name: 'LoveCounterWidgetProvider',
-        androidName: 'LoveCounterWidgetProvider',
+        name: providerName,
+        androidName: providerName,
       );
       await HomeWidget.requestPinWidget(
-        androidName: 'LoveCounterWidgetProvider',
+        androidName: providerName,
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✨ Toca "Añadir" en el mensaje de tu teléfono para colocar el widget.'),
-            duration: Duration(seconds: 4),
+          SnackBar(
+            content: Text('✨ Toca "Añadir" en tu pantalla para colocar el Widget $successName.'),
+            duration: const Duration(seconds: 4),
             backgroundColor: AppTheme.primaryRose,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -33,9 +39,10 @@ class WidgetsStudioScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Para añadirlo: mantén presionado en tu pantalla de inicio > "Widgets" > "My Heart"'),
+            content: Text('Para añadirlo: mantén presionado en tu pantalla de inicio > "Widgets" > "My Heart ($successName)"'),
             duration: const Duration(seconds: 4),
             backgroundColor: AppTheme.primaryRose,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -49,132 +56,158 @@ class WidgetsStudioScreen extends StatelessWidget {
 
     final userName = auth.currentUser?['nickname'] ?? auth.currentUser?['name'] ?? 'Tú';
     final partnerName = auth.partnerUser?['nickname'] ?? auth.partnerUser?['name'] ?? 'Mi Amor';
+    final isPaired = auth.isPaired;
 
     return Scaffold(
+      backgroundColor: AppTheme.softBackground,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: Text(
-          'Widgets de Inicio 📱',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppTheme.deepWine,
-                fontWeight: FontWeight.bold,
-              ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.deepWine),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Widgets de Pantalla 📱',
+          style: TextStyle(
+            color: AppTheme.deepWine,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFFF0F3), Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header description
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: const Color(0xFFFFE3E8)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryRose.withOpacity(0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: const BoxDecoration(
-                        color: AppTheme.softPink,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.widgets_rounded, color: AppTheme.primaryRose, size: 28),
-                    ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Text(
-                        'Lleva el amor a la pantalla principal de tu teléfono sin abrir la app.',
-                        style: TextStyle(fontSize: 13, color: AppTheme.textDark, height: 1.3),
-                      ),
-                    ),
-                  ],
-                ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header description
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFFFE3E8)),
+                boxShadow: AppTheme.cardShadow,
               ),
-
-              const SizedBox(height: 24),
-
-              Text(
-                'Elige un Widget para tu Pantalla:',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.deepWine,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: const BoxDecoration(
+                      color: AppTheme.softPink,
+                      shape: BoxShape.circle,
                     ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Widget 1: Love Counter Widget Preview (2x2 / 4x2)
-              _buildWidgetCard(
-                context,
-                title: '1. Widget Contador de Amor 💕',
-                subtitle: 'Muestra sus días juntos y la foto de ambos siempre visible.',
-                widgetPreview: _buildLoveCounterWidgetPreview(userName, partnerName, couple.daysTogether),
-                buttonLabel: '📌 Añadir a mi Pantalla de Inicio',
-                onAdd: () => _pinLoveCounterWidget(context, '$userName & $partnerName ♥', couple.daysTogether),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Widget 2: Locket Live Photo Widget Preview (2x2)
-              _buildWidgetCard(
-                context,
-                title: '2. Widget Foto en Vivo (Locket) 📸',
-                subtitle: 'Cada foto que tu pareja te mande aparecerá al instante en tu celular.',
-                widgetPreview: _buildLocketWidgetPreview(partnerName),
-                onAdd: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('💡 Mantén presionado en tu pantalla de inicio > Widgets > My Heart (Locket)'),
-                      duration: Duration(seconds: 4),
-                      backgroundColor: AppTheme.primaryRose,
+                    child: const Icon(Icons.widgets_rounded, color: AppTheme.primaryRose, size: 28),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'Coloca el amor directamente en la pantalla de tu celular sin abrir la app.',
+                      style: TextStyle(fontSize: 13, color: AppTheme.textDark, height: 1.3),
                     ),
-                  );
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            const Text(
+              'Elige tus Widgets para la Pantalla:',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: AppTheme.deepWine,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Widget 1: Love Counter Widget
+            _buildWidgetCard(
+              context,
+              title: '1. Contador de Días de Amor 💕',
+              subtitle: 'Contador romántico de días juntos y nombres de la pareja.',
+              widgetPreview: _buildLoveCounterWidgetPreview(
+                userName,
+                partnerName,
+                isPaired ? couple.daysTogether : 1,
+                isPaired,
+              ),
+              onAdd: () => _pinWidget(
+                context: context,
+                providerName: 'LoveCounterWidgetProvider',
+                data: {
+                  'couple_names': isPaired ? '$userName & $partnerName ♥' : '$userName & Mi Amor ♥',
+                  'days_count': isPaired ? '${couple.daysTogether}' : '1',
+                  'days_label': 'DÍAS JUNTOS',
                 },
+                successName: 'Contador de Amor',
               ),
+            ),
 
-              const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-              // Widget 3: Daily Spark Question Widget Preview (4x2)
-              _buildWidgetCard(
-                context,
-                title: '3. Widget Pregunta del Día 💬',
-                subtitle: 'Lee y responde la chispa diaria directamente desde el inicio.',
-                widgetPreview: _buildDailySparkWidgetPreview(couple),
-                onAdd: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('💡 Mantén presionado en tu pantalla de inicio > Widgets > My Heart (Sparks)'),
-                      duration: Duration(seconds: 4),
-                      backgroundColor: AppTheme.primaryRose,
-                    ),
-                  );
+            // Widget 2: Locket Live Photo Widget
+            _buildWidgetCard(
+              context,
+              title: '2. Foto y Momento Locket 📸',
+              subtitle: 'Muestra fotos, recuerdos y notas compartidas con tu amor.',
+              widgetPreview: _buildLocketWidgetPreview(partnerName),
+              onAdd: () => _pinWidget(
+                context: context,
+                providerName: 'LocketWidgetProvider',
+                data: {
+                  'locket_title': '📸 $partnerName & Tú',
+                  'locket_caption': 'Pensando en ti con amor 💕',
                 },
+                successName: 'Foto Locket',
               ),
+            ),
 
-              const SizedBox(height: 30),
-            ],
-          ),
+            const SizedBox(height: 20),
+
+            // Widget 3: Virtual Pet Widget
+            _buildWidgetCard(
+              context,
+              title: '3. Mascota Virtual de Amor 🐾',
+              subtitle: 'Tu mascota creciendo en la pantalla de inicio con su nivel.',
+              widgetPreview: _buildPetWidgetPreview(couple.petName, couple.petLevel),
+              onAdd: () => _pinWidget(
+                context: context,
+                providerName: 'PetWidgetProvider',
+                data: {
+                  'pet_name': couple.petName,
+                  'pet_emoji': '🐶',
+                  'pet_level': 'Nivel ${couple.petLevel} · Amor Puro 💕',
+                },
+                successName: 'Mascota Virtual',
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Widget 4: Sticky Note / Love Note Widget
+            _buildWidgetCard(
+              context,
+              title: '4. Nota de Amor / Post-it 💌',
+              subtitle: 'La última nota tierna que tu pareja te dejó para alegrarte el día.',
+              widgetPreview: _buildStickyNoteWidgetPreview(partnerName),
+              onAdd: () => _pinWidget(
+                context: context,
+                providerName: 'StickyNoteWidgetProvider',
+                data: {
+                  'note_author': '💌 Nota de $partnerName',
+                  'note_content': '"Te amo más de lo que las palabras pueden decir 💕"',
+                },
+                successName: 'Nota de Amor',
+              ),
+            ),
+
+            const SizedBox(height: 30),
+          ],
         ),
       ),
     );
@@ -194,20 +227,14 @@ class WidgetsStudioScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
         border: Border.all(color: const Color(0xFFFFE3E8), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryRose.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.deepWine),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.deepWine),
           ),
           const SizedBox(height: 4),
           Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
@@ -233,13 +260,13 @@ class WidgetsStudioScreen extends StatelessWidget {
             height: 46,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.softPink,
-                foregroundColor: AppTheme.deepWine,
+                backgroundColor: AppTheme.primaryRose,
+                foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               onPressed: onAdd,
-              icon: const Icon(Icons.add_to_home_screen_rounded, size: 18),
+              icon: const Icon(Icons.add_to_home_screen_rounded, size: 18, color: Colors.white),
               label: Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ),
           ),
@@ -248,40 +275,32 @@ class WidgetsStudioScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLoveCounterWidgetPreview(String user, String partner, int days) {
+  Widget _buildLoveCounterWidgetPreview(String u1, String u2, int days, bool isPaired) {
     return Container(
-      width: 260,
-      padding: const EdgeInsets.all(16),
+      width: 170,
+      height: 120,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: AppTheme.loveGradient,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$user & $partner',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              const Icon(Icons.favorite, color: Colors.white, size: 16),
-            ],
-          ),
-          const SizedBox(height: 8),
           Text(
-            '$days',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
-              fontFamily: 'Playfair Display',
-            ),
+            '$u1 & $u2 ♥',
+            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const Text(
-            'DÍAS ENAMORADOS',
-            style: TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold),
+          const SizedBox(height: 2),
+          Text(
+            isPaired ? '$days' : '♥',
+            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, height: 1.1),
+          ),
+          Text(
+            isPaired ? 'DÍAS JUNTOS' : 'HISTORIA DE AMOR',
+            style: const TextStyle(color: Colors.white70, fontSize: 8, letterSpacing: 1.2, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -290,91 +309,68 @@ class WidgetsStudioScreen extends StatelessWidget {
 
   Widget _buildLocketWidgetPreview(String partner) {
     return Container(
-      width: 260,
-      padding: const EdgeInsets.all(16),
+      width: 130,
+      height: 120,
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFF2C2C34),
+        gradient: AppTheme.loveGradient,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 12,
-                backgroundColor: AppTheme.primaryRose,
-                child: Text('♥', style: TextStyle(color: Colors.white, fontSize: 10)),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'De: $partner',
-                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              const Text('Ahora mismo', style: TextStyle(color: Colors.white54, fontSize: 9)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            height: 90,
-            decoration: BoxDecoration(
-              color: Colors.white10,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.photo_camera_rounded, color: Colors.white70, size: 28),
-                  SizedBox(height: 4),
-                  Text('Foto compartida en vivo 💕', style: TextStyle(color: Colors.white70, fontSize: 11)),
-                ],
-              ),
-            ),
-          ),
+          const Text('📸 Locket', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          const Text('💖', style: TextStyle(fontSize: 28)),
+          const SizedBox(height: 4),
+          Text('Foto de $partner', style: const TextStyle(color: Colors.white70, fontSize: 9)),
         ],
       ),
     );
   }
 
-  Widget _buildDailySparkWidgetPreview(CoupleProvider couple) {
+  Widget _buildPetWidgetPreview(String petName, int level) {
     return Container(
-      width: 260,
-      padding: const EdgeInsets.all(14),
+      width: 130,
+      height: 120,
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: AppTheme.loveGradient,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: const [
-              Text('✨', style: TextStyle(fontSize: 16)),
-              SizedBox(width: 6),
-              Text(
-                'Pregunta de Hoy',
-                style: TextStyle(color: AppTheme.deepWine, fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            couple.todayQuestion?['question']?['question_text'] ?? '¿Cuál fue el momento en que supiste que te gustaba?',
+          Text(petName, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          const Text('🐶', style: TextStyle(fontSize: 30)),
+          const SizedBox(height: 2),
+          Text('Nivel $level 💕', style: const TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStickyNoteWidgetPreview(String partner) {
+    return Container(
+      width: 150,
+      height: 120,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: AppTheme.loveGradient,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text('💌 Nota de $partner', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          const Text(
+            '"Te amo más de lo que imaginas 💕"',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontSize: 10, fontStyle: FontStyle.italic),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11, color: AppTheme.textDark, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppTheme.softPink,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Text('Toca para responder', style: TextStyle(fontSize: 10, color: AppTheme.primaryRose, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
