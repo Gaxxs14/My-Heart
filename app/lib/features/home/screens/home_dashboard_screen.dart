@@ -89,6 +89,78 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
+  void _showSettingsModal(BuildContext context, AuthProvider auth, CoupleProvider couple) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Ajustes y Cuenta 💖',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppTheme.deepWine,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  backgroundColor: AppTheme.softPink,
+                  child: const Icon(Icons.person_rounded, color: AppTheme.primaryRose),
+                ),
+                title: Text(auth.currentUser?['name'] ?? 'Usuario'),
+                subtitle: Text('Apodo: ${auth.currentUser?['nickname'] ?? 'Sin apodo'} • ${auth.isDemoMode ? "Modo Demo" : "Conectado a la Nube"}'),
+              ),
+              const Divider(),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  backgroundColor: AppTheme.softPink,
+                  child: const Icon(Icons.favorite_rounded, color: AppTheme.primaryRose),
+                ),
+                title: Text('Pareja: ${auth.partnerUser?['name'] ?? "Mi Amor"}'),
+                subtitle: Text('Mascota: ${couple.petName} (Nivel ${couple.petLevel})'),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    auth.logout();
+                  },
+                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                  label: const Text('Cerrar Sesión / Salir'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -119,9 +191,9 @@ class HomeDashboardScreen extends StatelessWidget {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.palette_outlined, color: AppTheme.deepWine),
-                tooltip: 'Personalizar',
-                onPressed: () {},
+                icon: const Icon(Icons.settings_outlined, color: AppTheme.deepWine),
+                tooltip: 'Ajustes y Perfil',
+                onPressed: () => _showSettingsModal(context, auth, couple),
               ),
             ],
           ),
@@ -130,6 +202,33 @@ class HomeDashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (auth.isDemoMode)
+                  GestureDetector(
+                    onTap: () => _showSettingsModal(context, auth, couple),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3E0),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.orange.shade300),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.info_outline_rounded, color: Colors.orange, size: 20),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Estás en Modo Demo. Toca aquí para ver ajustes o vincularte con tu pareja real.',
+                              style: TextStyle(fontSize: 12, color: Colors.brown, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.orange),
+                        ],
+                      ),
+                    ),
+                  ),
+
                 // 1. Dual Avatars with mood
                 _buildDualAvatarsSection(context, currentUser, partnerUser),
 
