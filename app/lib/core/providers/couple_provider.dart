@@ -72,6 +72,102 @@ class CoupleProvider extends ChangeNotifier {
   int get petXp => _coupleData?['pet_xp'] ?? 0;
   String get petName => _coupleData?['pet_name'] ?? 'Corazoncito';
 
+  void loadDemoData() {
+    _isPaired = true;
+    _coupleData = {
+      'id': 'demo-couple-1',
+      'pairing_code': 'DEMO-HEART',
+      'pet_name': 'Corazoncito',
+      'pet_level': 3,
+      'pet_xp': 65,
+      'anniversary_date': DateTime.now().subtract(const Duration(days: 420)).toIso8601String().split('T').first,
+      'relationship_time_start': DateTime.now().subtract(const Duration(days: 420)).toIso8601String(),
+    };
+    _startLoveTicker();
+
+    _todayQuestion = {
+      'question': {
+        'id': 'demo-q-1',
+        'emoji': '✨',
+        'category': 'deep',
+        'question_text': '¿Cuál fue el momento exacto en que te diste cuenta de que te gustaba?',
+      },
+      'user_answered': true,
+      'user_answer': 'El día que fuimos por café y nos quedamos hablando por horas bajo la lluvia ☕🌧️',
+      'partner_answered': true,
+      'partner_answer': 'Cuando me hiciste reír tanto que se me cayó el helado y no te importó ensuciarte para ayudarme 🍦❤️',
+      'is_locked_for_user': false,
+      'both_answered': true,
+    };
+
+    _memories = [
+      {
+        'id': 'demo-m-1',
+        'title': 'Nuestra primera cita 🍷',
+        'description': 'Cenamos pasta y nos quedamos platicando hasta que cerraron el restaurante.',
+        'memory_date': '2024-02-14',
+        'location_name': 'Trattoria Bella',
+        'author_name': 'Mi Amor',
+      },
+      {
+        'id': 'demo-m-2',
+        'title': 'Paseo al atardecer en el mirador 🌅',
+        'description': 'Llevamos café caliente y vimos cómo se encendían las luces de la ciudad.',
+        'memory_date': '2024-08-20',
+        'location_name': 'Mirador del Valle',
+        'author_name': 'Gabriel',
+      },
+    ];
+
+    _bucketList = [
+      {
+        'id': 'demo-b-1',
+        'title': 'Ver las auroras boreales juntos 🌌',
+        'description': 'Viaje soñado a Islandia o Noruega.',
+        'is_completed': false,
+        'category': 'travel',
+      },
+      {
+        'id': 'demo-b-2',
+        'title': 'Noche de cine bajo las estrellas 🎬🍿',
+        'description': 'Con proyector y muchas mantitas.',
+        'is_completed': true,
+        'completed_date': '2024-07-15',
+        'category': 'date_night',
+      },
+      {
+        'id': 'demo-b-3',
+        'title': 'Cocinar pizza artesanal desde cero 🍕',
+        'description': 'Quedó deliciosa.',
+        'is_completed': true,
+        'completed_date': '2024-05-10',
+        'category': 'home',
+      },
+    ];
+
+    _letters = [
+      {
+        'id': 'demo-l-1',
+        'sender_name': 'Mi Amor',
+        'title': 'Para cuando tengas un día difícil 💌',
+        'content': 'Solo quiero recordarte lo increíble que eres y cuánto te amo. No importa lo difícil que sea el día, siempre estaré aquí para ti con un abrazo.',
+        'is_unlocked': true,
+        'is_opened': true,
+      },
+      {
+        'id': 'demo-l-2',
+        'sender_name': 'Mi Amor',
+        'title': 'Nuestro próximo aniversario 🎂',
+        'unlock_type': 'date',
+        'unlock_date': DateTime.now().add(const Duration(days: 30)).toIso8601String(),
+        'is_unlocked': false,
+        'is_opened': false,
+      },
+    ];
+
+    notifyListeners();
+  }
+
   // Initialize couple state and real-time sockets
   Future<void> initCouple({
     required String userId,
@@ -79,6 +175,10 @@ class CoupleProvider extends ChangeNotifier {
     required Function(String mood, String icon) onPartnerMood,
     required Function(bool online) onPartnerOnline,
   }) async {
+    if (coupleId == 'demo-couple-1') {
+      loadDemoData();
+      return;
+    }
     await fetchCoupleStatus();
 
     if (_isPaired && _coupleData != null) {
@@ -219,11 +319,13 @@ class CoupleProvider extends ChangeNotifier {
       notifyListeners();
     });
 
-    _socketService.sendHeartbeat(
-      coupleId: _coupleData!['id'],
-      senderId: userId,
-      senderName: userName,
-    );
+    if (_coupleData?['id'] != 'demo-couple-1') {
+      _socketService.sendHeartbeat(
+        coupleId: _coupleData!['id'],
+        senderId: userId,
+        senderName: userName,
+      );
+    }
   }
 
   void triggerHeartbeatReceived(String senderName) {
@@ -240,6 +342,8 @@ class CoupleProvider extends ChangeNotifier {
 
   // Daily Sparks
   Future<void> loadTodayQuestion() async {
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+
     _isLoadingQuestion = true;
     notifyListeners();
 
@@ -255,6 +359,26 @@ class CoupleProvider extends ChangeNotifier {
   }
 
   Future<bool> answerTodayQuestion(String questionId, String answerText) async {
+    if (_coupleData?['id'] == 'demo-couple-1') {
+      _todayQuestion = {
+        'question': _todayQuestion?['question'] ?? {
+          'id': 'demo-q-1',
+          'emoji': '✨',
+          'category': 'deep',
+          'question_text': '¿Cuál fue el momento exacto en que te diste cuenta de que te gustaba?',
+        },
+        'user_answered': true,
+        'user_answer': answerText,
+        'partner_answered': true,
+        'partner_answer': 'Cuando me hiciste reír tanto que se me cayó el helado y no te importó ensuciarte para ayudarme 🍦❤️',
+        'is_locked_for_user': false,
+        'both_answered': true,
+      };
+      _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 15;
+      notifyListeners();
+      return true;
+    }
+
     try {
       await _apiService.post('/questions/answer', {
         'question_id': questionId,
@@ -274,6 +398,8 @@ class CoupleProvider extends ChangeNotifier {
 
   // Memories
   Future<void> loadMemories() async {
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+
     _isLoadingMemories = true;
     notifyListeners();
 
@@ -294,6 +420,20 @@ class CoupleProvider extends ChangeNotifier {
     required String memoryDate,
     String? locationName,
   }) async {
+    if (_coupleData?['id'] == 'demo-couple-1') {
+      _memories.insert(0, {
+        'id': 'demo-m-${DateTime.now().millisecondsSinceEpoch}',
+        'title': title,
+        'description': description ?? '',
+        'memory_date': memoryDate,
+        'location_name': locationName,
+        'author_name': 'Tú',
+      });
+      _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 20;
+      notifyListeners();
+      return true;
+    }
+
     try {
       await _apiService.post('/memories', {
         'title': title,
@@ -313,6 +453,8 @@ class CoupleProvider extends ChangeNotifier {
 
   // Bucket List
   Future<void> loadBucketList() async {
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+
     _isLoadingBucket = true;
     notifyListeners();
 
@@ -328,6 +470,18 @@ class CoupleProvider extends ChangeNotifier {
   }
 
   Future<bool> addBucketItem(String title, {String? category, String? description}) async {
+    if (_coupleData?['id'] == 'demo-couple-1') {
+      _bucketList.insert(0, {
+        'id': 'demo-b-${DateTime.now().millisecondsSinceEpoch}',
+        'title': title,
+        'category': category ?? 'date_night',
+        'description': description ?? '',
+        'is_completed': false,
+      });
+      notifyListeners();
+      return true;
+    }
+
     try {
       await _apiService.post('/bucket', {
         'title': title,
@@ -344,6 +498,18 @@ class CoupleProvider extends ChangeNotifier {
   }
 
   Future<void> toggleBucketItem(String itemId, bool isCompleted) async {
+    if (_coupleData?['id'] == 'demo-couple-1') {
+      final index = _bucketList.indexWhere((item) => item['id'] == itemId);
+      if (index != -1) {
+        _bucketList[index]['is_completed'] = isCompleted;
+        if (isCompleted) {
+          _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 50;
+        }
+        notifyListeners();
+      }
+      return;
+    }
+
     try {
       await _apiService.patch('/bucket/$itemId', {
         'is_completed': isCompleted,
@@ -357,6 +523,8 @@ class CoupleProvider extends ChangeNotifier {
 
   // Secret Letters
   Future<void> loadLetters() async {
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+
     _isLoadingLetters = true;
     notifyListeners();
 
@@ -378,6 +546,21 @@ class CoupleProvider extends ChangeNotifier {
     DateTime? unlockDate,
     String? unlockMood,
   }) async {
+    if (_coupleData?['id'] == 'demo-couple-1') {
+      _letters.insert(0, {
+        'id': 'demo-l-${DateTime.now().millisecondsSinceEpoch}',
+        'sender_name': 'Tú',
+        'title': title,
+        'content': content,
+        'unlock_type': unlockType,
+        'unlock_date': unlockDate?.toIso8601String(),
+        'is_unlocked': unlockDate == null || unlockDate.isBefore(DateTime.now()),
+        'is_opened': false,
+      });
+      notifyListeners();
+      return true;
+    }
+
     try {
       await _apiService.post('/letters', {
         'title': title,

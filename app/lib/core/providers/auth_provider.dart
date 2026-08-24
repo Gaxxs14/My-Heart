@@ -9,14 +9,40 @@ class AuthProvider extends ChangeNotifier {
   Map<String, dynamic>? _currentUser;
   Map<String, dynamic>? _partnerUser;
   bool _isAuthenticated = false;
+  bool _isDemoMode = false;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get currentUser => _currentUser;
   Map<String, dynamic>? get partnerUser => _partnerUser;
   bool get isAuthenticated => _isAuthenticated;
+  bool get isDemoMode => _isDemoMode;
   String? get coupleId => _currentUser?['couple_id'];
   bool get isPaired => coupleId != null;
+
+  void enterDemoMode({String name = 'Gabriel', String? nickname}) {
+    _isDemoMode = true;
+    _isAuthenticated = true;
+    _currentUser = {
+      'id': 'demo-user-1',
+      'name': name,
+      'nickname': nickname?.isNotEmpty == true ? nickname : 'Mi Amor',
+      'mood_status': 'Pensando en ti 💭',
+      'mood_icon': '💭',
+      'couple_id': 'demo-couple-1',
+      'avatar_url': null,
+    };
+    _partnerUser = {
+      'id': 'demo-user-2',
+      'name': 'Mi Amor',
+      'nickname': 'Princesa 🥰',
+      'mood_status': 'Enamorada 🥰',
+      'mood_icon': '🥰',
+      'is_online': true,
+      'avatar_url': null,
+    };
+    notifyListeners();
+  }
 
   Future<void> checkAuthStatus() async {
     _isLoading = true;

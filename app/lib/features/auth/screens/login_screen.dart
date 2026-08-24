@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import 'register_screen.dart';
 
@@ -227,6 +228,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     // Tab 3: Classic Email Login
                     _buildClassicLoginTab(auth),
                   ],
+                ),
+              ),
+
+              // Demo Mode Button (Explore without partner)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                child: TextButton.icon(
+                  onPressed: () {
+                    final couple = Provider.of<CoupleProvider>(context, listen: false);
+                    auth.enterDemoMode(name: 'Gabriel', nickname: 'Mi Amor');
+                    couple.loadDemoData();
+                  },
+                  icon: const Icon(Icons.explore_rounded, color: AppTheme.primaryRose, size: 18),
+                  label: const Text(
+                    '🚀 Explorar todo en Modo Demo (Sin vinculación)',
+                    style: TextStyle(
+                      color: AppTheme.primaryRose,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ),
             ],
