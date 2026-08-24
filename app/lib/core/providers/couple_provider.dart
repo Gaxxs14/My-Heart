@@ -629,14 +629,15 @@ class CoupleProvider extends ChangeNotifier {
   }
 
   // Daily Sparks
-  Future<void> loadTodayQuestion() async {
+  Future<void> loadTodayQuestion({bool random = false}) async {
     if (_coupleData?['id'] == 'demo-couple-1') return;
 
     _isLoadingQuestion = true;
     notifyListeners();
 
     try {
-      final res = await _apiService.get('/questions/today');
+      final endpoint = random ? '/questions/today?random=true' : '/questions/today';
+      final res = await _apiService.get(endpoint);
       _todayQuestion = res;
     } catch (e) {
       print('Error cargando pregunta: $e');

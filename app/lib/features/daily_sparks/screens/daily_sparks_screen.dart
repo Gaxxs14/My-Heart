@@ -80,8 +80,15 @@ class _DailySparksScreenState extends State<DailySparksScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.casino_rounded),
+            color: AppTheme.primaryRose,
+            tooltip: 'Girar otra pregunta 🎲',
+            onPressed: () => couple.loadTodayQuestion(random: true),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh_rounded),
             color: AppTheme.primaryRose,
+            tooltip: 'Recargar',
             onPressed: () => couple.loadTodayQuestion(),
           ),
         ],
@@ -123,28 +130,30 @@ class _DailySparksScreenState extends State<DailySparksScreen> {
                 ),
               )
             : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 100, 20, 32),
-                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 100, 20, 100),
                 child: Column(
                   children: [
-                    // ── Question Card ─────────────────────────────────
+                    // ── Question Card (Hero) ───────────────────────────
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(26),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                       decoration: BoxDecoration(
                         gradient: AppTheme.loveGradient,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                        boxShadow: AppTheme.heroShadow,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryRose.withValues(alpha: 0.35),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
                       child: Stack(
                         children: [
-                          Positioned.fill(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                              child: Container(color: Colors.transparent)
-                                  .animate(onPlay: (c) => c.repeat())
-                                  .shimmer(duration: 3000.ms, color: Colors.white.withValues(alpha: 0.1)),
-                            ),
+                          Positioned(
+                            right: -10,
+                            top: -10,
+                            child: Icon(Icons.auto_awesome, color: Colors.white.withValues(alpha: 0.12), size: 100),
                           ),
                           Column(
                             children: [
@@ -175,6 +184,30 @@ class _DailySparksScreenState extends State<DailySparksScreen> {
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
                                   height: 1.45,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              InkWell(
+                                onTap: () => couple.loadTodayQuestion(random: true),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      Icon(Icons.casino_rounded, color: Colors.white, size: 14),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Girar otra pregunta 🎲',
+                                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],

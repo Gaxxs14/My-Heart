@@ -14,22 +14,29 @@ export const getTodayQuestion = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Debes estar vinculado a una pareja para acceder a las preguntas.' });
     }
 
-    // Pick a question based on day index
-    const countRes = await pool.query('SELECT COUNT(*) FROM daily_questions');
-    const totalQuestions = parseInt(countRes.rows[0].count) || 1;
+    const isRandom = req.query.random === 'true';
 
-    // Calculate day offset from couple creation date
-    const coupleRes = await pool.query('SELECT created_at FROM couples WHERE id = $1', [coupleId]);
-    const createdDate = new Date(coupleRes.rows[0]?.created_at || Date.now());
-    const daysSince = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-    const questionOffset = daysSince % totalQuestions;
+    let question;
+    if (isRandom) {
+      const randomRes = await pool.query('SELECT * FROM daily_questions ORDER BY RANDOM() LIMIT 1');
+      question = randomRes.rows[0];
+    } else {
+      // Pick a question based on day index
+      const countRes = await pool.query('SELECT COUNT(*) FROM daily_questions');
+      const totalQuestions = parseInt(countRes.rows[0].count) || 1;
 
-    const questionRes = await pool.query(
-      'SELECT * FROM daily_questions ORDER BY id OFFSET $1 LIMIT 1',
-      [questionOffset]
-    );
+      // Calculate day offset from couple creation date
+      const coupleRes = await pool.query('SELECT created_at FROM couples WHERE id = $1', [coupleId]);
+      const createdDate = new Date(coupleRes.rows[0]?.created_at || Date.now());
+      const daysSince = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+      const questionOffset = daysSince % totalQuestions;
 
-    const question = questionRes.rows[0];
+      const questionRes = await pool.query(
+        'SELECT * FROM daily_questions ORDER BY id OFFSET $1 LIMIT 1',
+        [questionOffset]
+      );
+      question = questionRes.rows[0];
+    }
 
     // Check answers for this couple
     const answersRes = await pool.query(
