@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:home_widget/home_widget.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/theme_provider.dart';
@@ -88,18 +89,27 @@ class StickyNotesBoard extends StatelessWidget {
                     height: 48,
                     child: ElevatedButton(
                       onPressed: () {
-                        if (textController.text.trim().isEmpty) return;
+                        final content = textController.text.trim();
+                        if (content.isEmpty) return;
 
                         final couple = Provider.of<CoupleProvider>(context, listen: false);
                         couple.addStickyNote(
-                          content: textController.text.trim(),
+                          content: content,
                           color: selectedColor,
                           authorName: myName,
                         );
 
+                        // Auto-sync note to home screen widget
+                        HomeWidget.saveWidgetData<String>('note_author', '💌 Nota de $myName');
+                        HomeWidget.saveWidgetData<String>('note_content', '"$content"');
+                        HomeWidget.updateWidget(
+                          name: 'StickyNoteWidgetProvider',
+                          androidName: 'StickyNoteWidgetProvider',
+                        );
+
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('¡Notita pegada en su muro! 💕 (+10 XP)')),
+                          const SnackBar(content: Text('¡Notita pegada en su muro y actualizada en el Widget! 💕 (+10 XP)')),
                         );
                       },
                       child: const Text('Pegar Notita (+10 XP)'),

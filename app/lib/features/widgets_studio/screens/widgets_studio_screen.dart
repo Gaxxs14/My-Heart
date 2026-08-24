@@ -5,8 +5,140 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
 
-class WidgetsStudioScreen extends StatelessWidget {
+class WidgetsStudioScreen extends StatefulWidget {
   const WidgetsStudioScreen({super.key});
+
+  @override
+  State<WidgetsStudioScreen> createState() => _WidgetsStudioScreenState();
+}
+
+class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
+  String _customNoteText = '"Te amo más de lo que las palabras pueden decir 💕"';
+
+  final List<String> _quickNotePresets = [
+    '"Te amo más de lo que las palabras pueden decir 💕"',
+    '"¡Que tengas un día tan hermoso como tú! ☀️"',
+    '"Eres mi persona favorita en todo el universo ✨"',
+    '"Pensando en ti en cada segundo 🥰"',
+    '"Contando los minutos para abrazarte 🍷💖"',
+    '"Gracias por hacerme tan feliz todos los días 💌"',
+  ];
+
+  void _showEditNoteDialog(String partnerName) {
+    final controller = TextEditingController(text: _customNoteText.replaceAll('"', ''));
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Row(
+                children: const [
+                  Icon(Icons.edit_note_rounded, color: AppTheme.primaryRose),
+                  SizedBox(width: 8),
+                  Text('Personalizar Nota 💌', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Escribe el mensaje de amor que aparecerá en tu Widget de pantalla:',
+                      style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: controller,
+                      maxLines: 3,
+                      maxLength: 100,
+                      decoration: const InputDecoration(
+                        labelText: 'Tu Mensaje de Amor',
+                        hintText: 'Ej. Te amo mi vida 💕 Nos vemos pronto',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'O elige una frase romántica:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.deepWine),
+                    ),
+                    const SizedBox(height: 8),
+                    ..._quickNotePresets.map((preset) {
+                      final clean = preset.replaceAll('"', '');
+                      return InkWell(
+                        onTap: () {
+                          setModalState(() {
+                            controller.text = clean;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.favorite, size: 12, color: AppTheme.primaryRose),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  clean,
+                                  style: const TextStyle(fontSize: 11, color: AppTheme.textDark),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryRose,
+                    shape: const StadiumBorder(),
+                  ),
+                  onPressed: () {
+                    final text = controller.text.trim();
+                    if (text.isNotEmpty) {
+                      setState(() {
+                        _customNoteText = '"$text"';
+                      });
+                      // Auto update widget data in background
+                      HomeWidget.saveWidgetData<String>('note_author', '💌 Nota de $partnerName');
+                      HomeWidget.saveWidgetData<String>('note_content', _customNoteText);
+                      HomeWidget.updateWidget(
+                        name: 'StickyNoteWidgetProvider',
+                        androidName: 'StickyNoteWidgetProvider',
+                      );
+                    }
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✨ Texto del Widget actualizado con éxito.'),
+                        backgroundColor: AppTheme.primaryRose,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  child: const Text('Guardar Texto', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   Future<void> _pinWidget({
     required BuildContext context,
@@ -189,18 +321,28 @@ class WidgetsStudioScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Widget 4: Sticky Note / Love Note Widget
+            // Widget 4: Sticky Note / Love Note Widget (With Custom Edit Option)
             _buildWidgetCard(
               context,
               title: '4. Nota de Amor / Post-it 💌',
-              subtitle: 'La última nota tierna que tu pareja te dejó para alegrarte el día.',
-              widgetPreview: _buildStickyNoteWidgetPreview(partnerName),
+              subtitle: 'Personaliza el texto libremente para que aparezca en tu pantalla.',
+              customAction: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryRose,
+                  side: const BorderSide(color: AppTheme.primaryRose),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () => _showEditNoteDialog(partnerName),
+                icon: const Icon(Icons.edit_rounded, size: 16),
+                label: const Text('✏️ Cambiar Texto del Post-it', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+              widgetPreview: _buildStickyNoteWidgetPreview(partnerName, _customNoteText),
               onAdd: () => _pinWidget(
                 context: context,
                 providerName: 'StickyNoteWidgetProvider',
                 data: {
                   'note_author': '💌 Nota de $partnerName',
-                  'note_content': '"Te amo más de lo que las palabras pueden decir 💕"',
+                  'note_content': _customNoteText,
                 },
                 successName: 'Nota de Amor',
               ),
@@ -218,6 +360,7 @@ class WidgetsStudioScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     required Widget widgetPreview,
+    Widget? customAction,
     String buttonLabel = '📌 Añadir a mi Pantalla de Inicio',
     required VoidCallback onAdd,
   }) {
@@ -238,6 +381,10 @@ class WidgetsStudioScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+          if (customAction != null) ...[
+            const SizedBox(height: 10),
+            customAction,
+          ],
           const SizedBox(height: 16),
 
           // Visual Preview Frame
@@ -351,9 +498,9 @@ class WidgetsStudioScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStickyNoteWidgetPreview(String partner) {
+  Widget _buildStickyNoteWidgetPreview(String partner, String text) {
     return Container(
-      width: 150,
+      width: 160,
       height: 120,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -364,12 +511,12 @@ class WidgetsStudioScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text('💌 Nota de $partner', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          const Text(
-            '"Te amo más de lo que imaginas 💕"',
+          const SizedBox(height: 6),
+          Text(
+            text,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white, fontSize: 10, fontStyle: FontStyle.italic),
-            maxLines: 2,
+            style: const TextStyle(color: Colors.white, fontSize: 11, fontStyle: FontStyle.italic, height: 1.2),
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
         ],
