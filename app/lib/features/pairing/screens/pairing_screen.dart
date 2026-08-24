@@ -234,25 +234,7 @@ class _PairingScreenState extends State<PairingScreen> with SingleTickerProvider
                 ),
               ),
 
-              // Demo Mode Shortcut
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                child: TextButton.icon(
-                  onPressed: () {
-                    auth.enterDemoMode(name: 'Gabriel', nickname: 'Mi Amor');
-                    couple.loadDemoData();
-                  },
-                  icon: const Icon(Icons.explore_rounded, color: AppTheme.primaryRose, size: 18),
-                  label: const Text(
-                    '🚀 O explorar todo en Modo Demo sin vincularme',
-                    style: TextStyle(
-                      color: AppTheme.primaryRose,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
+
             ],
           ),
         ),

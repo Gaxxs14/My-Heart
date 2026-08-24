@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import 'register_screen.dart';
 
@@ -161,14 +160,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
 
-                          const Spacer(),
-
-                          // ── Demo Button ───────────────────────────────
-                          _buildDemoButton(auth)
-                              .animate(delay: 500.ms)
-                              .fadeIn(duration: 400.ms),
-
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -398,34 +390,6 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // ─── Demo Button ──────────────────────────────────────────────────────────
-
-  Widget _buildDemoButton(AuthProvider auth) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppTheme.deepWine,
-          side: BorderSide(color: AppTheme.primaryRose.withOpacity(0.4), width: 1.2),
-          backgroundColor: Colors.white.withOpacity(0.6),
-          minimumSize: const Size(double.infinity, 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
-        ),
-        onPressed: () {
-          final couple = Provider.of<CoupleProvider>(context, listen: false);
-          auth.enterDemoMode(name: 'Gabriel', nickname: 'Mi Amor');
-          couple.loadDemoData();
-        },
-        icon: const Icon(Icons.explore_outlined, size: 18),
-        label: const Text(
-          'Explorar en Modo Demo (sin vinculación)',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        ),
-      )
-          .animate(onPlay: (c) => c.repeat(reverse: true))
-          .shimmer(duration: 2500.ms, color: AppTheme.primaryRose.withOpacity(0.06)),
-    );
-  }
 
   // ─── Shared helpers ───────────────────────────────────────────────────────
 

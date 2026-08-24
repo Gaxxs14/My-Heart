@@ -140,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      auth.isDemoMode ? 'Modo Demo Activo' : 'Vinculado a: $partnerName',
+                      'Vinculado a: $partnerName',
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],

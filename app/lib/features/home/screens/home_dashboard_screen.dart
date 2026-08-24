@@ -160,7 +160,7 @@ class HomeDashboardScreen extends StatelessWidget {
         ),
       ),
       title: Text(auth.currentUser?['name'] ?? 'Usuario', style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: Text('${auth.currentUser?['nickname'] ?? 'Sin apodo'} · ${auth.isDemoMode ? "Demo" : "En línea"}',
+      subtitle: Text(auth.currentUser?['nickname'] ?? 'Sin apodo',
           style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
       trailing: TextButton(
         onPressed: () {
@@ -260,9 +260,6 @@ class HomeDashboardScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Demo Banner
-                      if (auth.isDemoMode) _buildDemoBanner(context, auth, couple, theme),
-
                       // 1. Dual Avatars Hero
                       _buildDualAvatarsSection(context, auth.currentUser, auth.partnerUser, theme)
                           .animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0),
@@ -375,43 +372,6 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  // ─── Demo Banner ──────────────────────────────────────────────────────────
-
-  Widget _buildDemoBanner(BuildContext context, AuthProvider auth, CoupleProvider couple, ThemeProvider theme) {
-    return GestureDetector(
-      onTap: () => _showSettingsModal(context, auth, couple, theme),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16, top: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.orange.shade50, Colors.amber.shade50],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          border: Border.all(color: Colors.orange.shade200),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: Colors.orange.shade100, shape: BoxShape.circle),
-              child: const Icon(Icons.explore_rounded, color: Colors.orange, size: 16),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Modo Demo activo — Toca para ajustes o vincularte.',
-                style: TextStyle(fontSize: 12, color: Colors.brown, fontWeight: FontWeight.w600),
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.orange),
-          ],
-        ),
-      ),
-    );
-  }
 
   // ─── Dual Avatars Hero ────────────────────────────────────────────────────
 
