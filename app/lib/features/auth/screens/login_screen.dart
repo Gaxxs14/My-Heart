@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -15,34 +14,35 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isRegisterMode = false;
 
   // Controllers for Login
-  final _loginEmailController    = TextEditingController();
+  final _loginUsernameController = TextEditingController();
   final _loginPasswordController = TextEditingController();
 
   // Controllers for Register
+  final _regUsernameController = TextEditingController();
   final _regNameController     = TextEditingController();
   final _regNicknameController = TextEditingController();
-  final _regEmailController    = TextEditingController();
   final _regPasswordController = TextEditingController();
 
-  bool _obscurePassword = true;
+  bool _obscureLoginPassword = true;
+  bool _obscureRegPassword   = true;
 
   @override
   void dispose() {
-    _loginEmailController.dispose();
+    _loginUsernameController.dispose();
     _loginPasswordController.dispose();
+    _regUsernameController.dispose();
     _regNameController.dispose();
     _regNicknameController.dispose();
-    _regEmailController.dispose();
     _regPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _submitLogin() async {
-    final email = _loginEmailController.text.trim();
+    final username = _loginUsernameController.text.trim();
     final password = _loginPasswordController.text;
 
-    if (email.isEmpty || !email.contains('@')) {
-      _showError('Ingresa un correo electrónico válido');
+    if (username.isEmpty) {
+      _showError('Por favor ingresa tu nombre de usuario');
       return;
     }
     if (password.isEmpty) {
@@ -51,24 +51,20 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final ok = await auth.login(email: email, password: password);
+    final ok = await auth.login(username: username, password: password);
     if (!ok && mounted && auth.errorMessage != null) {
       _showError(auth.errorMessage!);
     }
   }
 
   Future<void> _submitRegister() async {
-    final name = _regNameController.text.trim();
+    final username = _regUsernameController.text.trim();
+    final name     = _regNameController.text.trim();
     final nickname = _regNicknameController.text.trim();
-    final email = _regEmailController.text.trim();
     final password = _regPasswordController.text;
 
-    if (name.isEmpty) {
-      _showError('Por favor ingresa tu nombre');
-      return;
-    }
-    if (email.isEmpty || !email.contains('@')) {
-      _showError('Ingresa un correo electrónico válido');
+    if (username.isEmpty || username.length < 3) {
+      _showError('El nombre de usuario debe tener al menos 3 caracteres');
       return;
     }
     if (password.length < 6) {
@@ -78,9 +74,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final ok = await auth.register(
-      name: name,
-      nickname: nickname.isNotEmpty ? nickname : null,
-      email: email,
+      username: username,
+      name:     name.isNotEmpty ? name : username,
+      nickname: nickname.isNotEmpty ? nickname : (name.isNotEmpty ? name : username),
       password: password,
     );
     if (!ok && mounted && auth.errorMessage != null) {
@@ -162,8 +158,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: Text(
                     _isRegisterMode
-                        ? '¿Ya tienes una cuenta? Inicia sesión aquí'
-                        : '¿Nuevo en My Heart? Crea tu cuenta aquí',
+                        ? '¿Ya tienes un usuario? Inicia sesión aquí'
+                        : '¿Nuevo en My Heart? Crea tu usuario aquí',
                     style: const TextStyle(
                       color: AppTheme.primaryRose,
                       fontWeight: FontWeight.bold,
@@ -294,33 +290,33 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Ingresa tu correo y contraseña para entrar.',
+          'Ingresa tu usuario y contraseña para entrar.',
           style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
         ),
         const SizedBox(height: 20),
         TextField(
-          controller: _loginEmailController,
-          keyboardType: TextInputType.emailAddress,
+          controller: _loginUsernameController,
+          autocorrect: false,
           decoration: const InputDecoration(
-            labelText: 'Correo electrónico',
-            hintText: 'tu@correo.com',
-            prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryRose),
+            labelText: 'Nombre de Usuario',
+            hintText: 'Ej. gabriel, sofia',
+            prefixIcon: Icon(Icons.person_outline_rounded, color: AppTheme.primaryRose),
           ),
         ),
         const SizedBox(height: 14),
         TextField(
           controller: _loginPasswordController,
-          obscureText: _obscurePassword,
+          obscureText: _obscureLoginPassword,
           decoration: InputDecoration(
             labelText: 'Contraseña',
             prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.primaryRose),
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscureLoginPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                 color: AppTheme.textMuted,
                 size: 20,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () => setState(() => _obscureLoginPassword = !_obscureLoginPassword),
             ),
           ),
         ),
@@ -348,17 +344,27 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Regístrate para vincularte con tu pareja.',
+          'Elige un nombre de usuario para identificarte.',
           style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
         ),
         const SizedBox(height: 18),
         TextField(
+          controller: _regUsernameController,
+          autocorrect: false,
+          decoration: const InputDecoration(
+            labelText: 'Nombre de Usuario (para iniciar sesión)',
+            hintText: 'Ej. gabriel, sofia_amor',
+            prefixIcon: Icon(Icons.alternate_email_rounded, color: AppTheme.primaryRose),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
           controller: _regNameController,
           textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(
-            labelText: 'Tu Nombre',
-            hintText: 'Ej. Gabriel, Sofía',
-            prefixIcon: Icon(Icons.person_outline_rounded, color: AppTheme.primaryRose),
+            labelText: 'Tu Nombre real (opcional)',
+            hintText: 'Ej. Gabriel',
+            prefixIcon: Icon(Icons.badge_outlined, color: AppTheme.primaryRose),
           ),
         ),
         const SizedBox(height: 12),
@@ -373,34 +379,24 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 12),
         TextField(
-          controller: _regEmailController,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            labelText: 'Correo electrónico',
-            hintText: 'tu@correo.com',
-            prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryRose),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
           controller: _regPasswordController,
-          obscureText: _obscurePassword,
+          obscureText: _obscureRegPassword,
           decoration: InputDecoration(
             labelText: 'Contraseña (mínimo 6 caracteres)',
             prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.primaryRose),
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscureRegPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                 color: AppTheme.textMuted,
                 size: 20,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () => setState(() => _obscureRegPassword = !_obscureRegPassword),
             ),
           ),
         ),
         const SizedBox(height: 24),
         _buildSubmitButton(
-          label: 'Crear Cuenta y Continuar 💕',
+          label: 'Crear Usuario y Continuar 💕',
           isLoading: auth.isLoading,
           onPressed: _submitRegister,
         ),

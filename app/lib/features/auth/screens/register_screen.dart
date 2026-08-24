@@ -12,17 +12,17 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _usernameController = TextEditingController();
   final _nameController = TextEditingController();
   final _nicknameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _nameController.dispose();
     _nicknameController.dispose();
-    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -32,16 +32,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final success = await auth.register(
+      username: _usernameController.text.trim(),
       name: _nameController.text.trim(),
       nickname: _nicknameController.text.trim(),
-      email: _emailController.text.trim(),
       password: _passwordController.text,
     );
 
     if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pop(); // Go back to root which will redirect to pairing
+      Navigator.of(context).pop();
     } else if (auth.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -82,7 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   children: [
                     Text(
-                      'Crea tu Cuenta',
+                      'Crea tu Usuario',
                       style: Theme.of(context).textTheme.displayMedium?.copyWith(
                             color: AppTheme.deepWine,
                             fontWeight: FontWeight.bold,
@@ -99,14 +99,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     const SizedBox(height: 30),
 
+                    // Username
+                    TextFormField(
+                      controller: _usernameController,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre de Usuario',
+                        hintText: 'Ej. gabriel, sofia_amor',
+                        prefixIcon: Icon(Icons.alternate_email_rounded, color: AppTheme.primaryRose),
+                      ),
+                      validator: (val) => val != null && val.trim().length >= 3 ? null : 'Mínimo 3 caracteres',
+                    ),
+
+                    const SizedBox(height: 14),
+
                     // Name
                     TextFormField(
                       controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
                       decoration: const InputDecoration(
-                        labelText: 'Tu Nombre',
+                        labelText: 'Tu Nombre real (opcional)',
+                        hintText: 'Ej. Gabriel',
                         prefixIcon: Icon(Icons.person_outline_rounded, color: AppTheme.primaryRose),
                       ),
-                      validator: (val) => val != null && val.isNotEmpty ? null : 'Ingresa tu nombre',
                     ),
 
                     const SizedBox(height: 14),
@@ -114,23 +129,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Nickname / Apodo cariñoso
                     TextFormField(
                       controller: _nicknameController,
+                      textCapitalization: TextCapitalization.words,
                       decoration: const InputDecoration(
                         labelText: 'Apodo cariñoso (ej. Mi Amor, Bebé)',
                         prefixIcon: Icon(Icons.favorite_border_rounded, color: AppTheme.primaryRose),
                       ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // Email
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Correo electrónico',
-                        prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryRose),
-                      ),
-                      validator: (val) => val != null && val.contains('@') ? null : 'Ingresa un email válido',
                     ),
 
                     const SizedBox(height: 14),
@@ -148,23 +151,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     const SizedBox(height: 28),
 
-                    // Register Button
                     SizedBox(
                       width: double.infinity,
-                      height: 54,
+                      height: 52,
                       child: ElevatedButton(
                         onPressed: auth.isLoading ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryRose,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
                         child: auth.isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
-                                'Registrarme y Vincular',
-                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                                'Registrarme e Ingresar 💕',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                       ),
                     ),

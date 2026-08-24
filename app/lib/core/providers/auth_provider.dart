@@ -50,10 +50,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> register({
-    required String name,
-    required String email,
-    required String password,
+    required String username,
+    String? name,
     String? nickname,
+    String? email,
+    required String password,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -61,10 +62,11 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final res = await _apiService.post('/auth/register', {
-        'name':     name,
-        'email':    email,
+        'username': username.trim(),
+        'name':     (name?.isNotEmpty == true ? name : nickname ?? username).toString().trim(),
+        'nickname': (nickname?.isNotEmpty == true ? nickname : name ?? username).toString().trim(),
+        'email':    email?.trim(),
         'password': password,
-        'nickname': nickname,
       });
 
       await _apiService.setToken(res['token']);
@@ -82,7 +84,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> login({
-    required String email,
+    required String username,
     required String password,
   }) async {
     _isLoading = true;
@@ -91,7 +93,7 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final res = await _apiService.post('/auth/login', {
-        'email':    email,
+        'username': username.trim(),
         'password': password,
       });
 

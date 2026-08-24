@@ -8,30 +8,44 @@ import { AuthRequest } from '../middleware/auth';
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_romantic_heart_key';
 
 export const register = async (req: Request, res: Response) => {
-  const { email, password, name, nickname } = req.body;
+  const { username, email, password, name, nickname } = req.body;
 
-  if (!email || !password || !name) {
-    return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios.' });
+  const rawUsername = (username || email?.split('@')[0] || name || '').toString().trim();
+  const cleanUsername = rawUsername.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+
+  if (!cleanUsername || cleanUsername.length < 3) {
+    return res.status(400).json({ error: 'El nombre de usuario debe tener al menos 3 caracteres (letras o números).' });
   }
 
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
+  }
+
+  const cleanName = (name || nickname || cleanUsername).toString().trim();
+  const cleanNickname = (nickname || cleanName).toString().trim();
+  const cleanEmail = email ? email.toString().toLowerCase().trim() : `${cleanUsername}@myheart.app`;
+
   try {
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    const existing = await pool.query(
+      'SELECT id FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($2)',
+      [cleanUsername, cleanEmail]
+    );
     if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'Ya existe una cuenta con este correo electrónico.' });
+      return res.status(409).json({ error: 'Este nombre de usuario ya está en uso. Por favor elige otro.' });
     }
 
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
 
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, name, nickname)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, email, name, nickname, avatar_url, mood_status, mood_icon, couple_id, created_at`,
-      [email.toLowerCase().trim(), password_hash, name.trim(), (nickname || name).trim()]
+      `INSERT INTO users (username, email, password_hash, name, nickname)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, username, email, name, nickname, avatar_url, mood_status, mood_icon, couple_id, created_at`,
+      [cleanUsername, cleanEmail, password_hash, cleanName, cleanNickname]
     );
 
     const user = result.rows[0];
-    const token = jwt.sign({ id: user.id, email: user.email, couple_id: user.couple_id }, JWT_SECRET, { expiresIn: '90d' });
+    const token = jwt.sign({ id: user.id, username: user.username, email: user.email, couple_id: user.couple_id }, JWT_SECRET, { expiresIn: '90d' });
 
     return res.status(201).json({
       message: '¡Bienvenido a My Heart! Cuenta creada con éxito.',
@@ -45,21 +59,23 @@ export const register = async (req: Request, res: Response) => {
 };
 
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { username, email, identifier, password } = req.body;
+  const loginInput = (username || identifier || email || '').toString().trim();
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email y contraseña requeridos.' });
+  if (!loginInput || !password) {
+    return res.status(400).json({ error: 'Usuario y contraseña requeridos.' });
   }
 
   try {
     const result = await pool.query(
-      `SELECT id, email, password_hash, name, nickname, avatar_url, mood_status, mood_icon, couple_id, partner_id
-       FROM users WHERE LOWER(email) = LOWER($1)`,
-      [email.trim()]
+      `SELECT id, username, email, password_hash, name, nickname, avatar_url, mood_status, mood_icon, couple_id, partner_id
+       FROM users 
+       WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1) OR LOWER(name) = LOWER($1)`,
+      [loginInput]
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'No existe una cuenta con este correo. ¿Deseas registrarte?' });
+      return res.status(401).json({ error: 'No existe una cuenta con este usuario. ¿Deseas crear tu cuenta?' });
     }
 
     const user = result.rows[0];
@@ -69,7 +85,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     delete user.password_hash;
-    const token = jwt.sign({ id: user.id, email: user.email, couple_id: user.couple_id }, JWT_SECRET, { expiresIn: '90d' });
+    const token = jwt.sign({ id: user.id, username: user.username, email: user.email, couple_id: user.couple_id }, JWT_SECRET, { expiresIn: '90d' });
 
     return res.json({
       message: 'Inicio de sesión exitoso.',
