@@ -1,7 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -18,10 +16,8 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen>
-    with TickerProviderStateMixin {
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-  late AnimationController _bounceController;
 
   final List<Widget> _screens = const [
     HomeDashboardScreen(),
@@ -32,20 +28,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   ];
 
   final List<_NavItem> _items = const [
-    _NavItem(icon: Icons.favorite_rounded,     iconOff: Icons.favorite_border_rounded,     label: 'Rincón'),
-    _NavItem(icon: Icons.auto_awesome_rounded,  iconOff: Icons.auto_awesome_outlined,       label: 'Sparks'),
-    _NavItem(icon: Icons.photo_library_rounded, iconOff: Icons.photo_library_outlined,      label: 'Recuerdos'),
-    _NavItem(icon: Icons.checklist_rounded,     iconOff: Icons.check_box_outline_blank_rounded, label: 'Citas'),
-    _NavItem(icon: Icons.mail_rounded,          iconOff: Icons.mail_outline_rounded,        label: 'Cápsula'),
+    _NavItem(
+      icon: Icons.favorite_rounded,
+      iconOff: Icons.favorite_border_rounded,
+      label: 'Inicio',
+    ),
+    _NavItem(
+      icon: Icons.auto_awesome_rounded,
+      iconOff: Icons.auto_awesome_outlined,
+      label: 'Chispas',
+    ),
+    _NavItem(
+      icon: Icons.photo_library_rounded,
+      iconOff: Icons.photo_library_outlined,
+      label: 'Recuerdos',
+    ),
+    _NavItem(
+      icon: Icons.checklist_rounded,
+      iconOff: Icons.check_box_outline_blank_rounded,
+      label: 'Citas',
+    ),
+    _NavItem(
+      icon: Icons.mail_rounded,
+      iconOff: Icons.mail_outline_rounded,
+      label: 'Cartas',
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _bounceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth   = Provider.of<AuthProvider>(context, listen: false);
       final couple = Provider.of<CoupleProvider>(context, listen: false);
@@ -60,29 +72,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     });
   }
 
-  @override
-  void dispose() {
-    _bounceController.dispose();
-    super.dispose();
-  }
-
   void _onItemTapped(int index) {
     if (index == _currentIndex) return;
     setState(() => _currentIndex = index);
-    _bounceController
-      ..reset()
-      ..forward();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
+      extendBody: false, // Ensures bottom buttons and content are NEVER covered
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: _FloatingNavBar(
+      bottomNavigationBar: _ClearNavBar(
         currentIndex: _currentIndex,
         items: _items,
         onTap: _onItemTapped,
@@ -91,10 +94,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   }
 }
 
-// ─── Floating Nav Bar ─────────────────────────────────────────────────────────
+// ─── High-Contrast Crystal-Clear Nav Bar ─────────────────────────────────────
 
-class _FloatingNavBar extends StatelessWidget {
-  const _FloatingNavBar({
+class _ClearNavBar extends StatelessWidget {
+  const _ClearNavBar({
     required this.currentIndex,
     required this.items,
     required this.onTap,
@@ -108,100 +111,74 @@ class _FloatingNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        bottom: bottomPadding + 12,
-        top: 0,
-      ),
-      child: Container(
-        height: 68,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-          border: Border.all(
-            color: AppTheme.primaryRose.withOpacity(0.12),
-            width: 1.2,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.primaryRose.withOpacity(0.15),
+            width: 1,
           ),
-          boxShadow: AppTheme.navShadow,
         ),
-        child: Row(
-          children: List.generate(items.length, (i) {
-                final selected = i == currentIndex;
-                return Expanded(
-                  child: _NavTabItem(
-                    item: items[i],
-                    selected: selected,
-                    onTap: () => onTap(i),
-                  ),
-                );
-              }),
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
           ),
-    );
-  }
-}
+        ],
+      ),
+      padding: EdgeInsets.only(bottom: bottomPadding, top: 6),
+      height: 64 + bottomPadding,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(items.length, (i) {
+          final selected = i == currentIndex;
+          final item = items[i];
 
-class _NavTabItem extends StatelessWidget {
-  const _NavTabItem({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _NavItem item;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        padding: selected
-            ? const EdgeInsets.symmetric(horizontal: 14, vertical: 0)
-            : EdgeInsets.zero,
-        decoration: selected
-            ? BoxDecoration(
-                gradient: AppTheme.loveGradient,
-                borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryRose.withOpacity(0.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              )
-            : null,
-        child: selected
-            ? Row(
+          return Expanded(
+            child: InkWell(
+              onTap: () => onTap(i),
+              splashColor: AppTheme.softPink,
+              highlightColor: Colors.transparent,
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(item.icon, size: 18, color: Colors.white),
-                  const SizedBox(width: 5),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppTheme.primaryRose.withOpacity(0.12)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      selected ? item.icon : item.iconOff,
+                      size: 24,
+                      color: selected
+                          ? AppTheme.primaryRose
+                          : const Color(0xFF6B5560),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
                   Text(
                     item.label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                      color: selected
+                          ? AppTheme.primaryRose
+                          : const Color(0xFF6B5560),
                     ),
                   ),
                 ],
-              ).animate().fadeIn(duration: 200.ms).slideX(begin: 0.1, end: 0)
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(item.iconOff, size: 22, color: AppTheme.textMuted),
-                ],
               ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -213,6 +190,7 @@ class _NavItem {
     required this.iconOff,
     required this.label,
   });
+
   final IconData icon;
   final IconData iconOff;
   final String label;

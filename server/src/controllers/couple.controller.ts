@@ -162,7 +162,17 @@ export const linkPartnerByCode = async (req: AuthRequest, res: Response) => {
 };
 
 export const updateCoupleSettings = async (req: AuthRequest, res: Response) => {
-  const { anniversary_date, pet_name, love_song_title, love_song_artist, theme_palette } = req.body;
+  const {
+    anniversary_date,
+    pet_name,
+    pet_type,
+    pet_level,
+    pet_xp,
+    love_song_title,
+    love_song_artist,
+    love_song_url,
+    theme_palette,
+  } = req.body;
   const userId = req.user?.id;
 
   try {
@@ -177,13 +187,28 @@ export const updateCoupleSettings = async (req: AuthRequest, res: Response) => {
       `UPDATE couples
        SET anniversary_date = COALESCE($1, anniversary_date),
            pet_name = COALESCE($2, pet_name),
-           love_song_title = COALESCE($3, love_song_title),
-           love_song_artist = COALESCE($4, love_song_artist),
-           theme_palette = COALESCE($5, theme_palette),
+           pet_type = COALESCE($3, pet_type),
+           pet_level = COALESCE($4, pet_level),
+           pet_xp = COALESCE($5, pet_xp),
+           love_song_title = COALESCE($6, love_song_title),
+           love_song_artist = COALESCE($7, love_song_artist),
+           love_song_url = COALESCE($8, love_song_url),
+           theme_palette = COALESCE($9, theme_palette),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $6
+       WHERE id = $10
        RETURNING *`,
-      [anniversary_date, pet_name, love_song_title, love_song_artist, theme_palette, coupleId]
+      [
+        anniversary_date,
+        pet_name,
+        pet_type,
+        pet_level,
+        pet_xp,
+        love_song_title,
+        love_song_artist,
+        love_song_url,
+        theme_palette,
+        coupleId,
+      ]
     );
 
     return res.json({

@@ -275,14 +275,14 @@ class HomeDashboardScreen extends StatelessWidget {
       children: [
         Scaffold(
           backgroundColor: AppTheme.softBackground,
-          extendBodyBehindAppBar: true,
+          extendBodyBehindAppBar: false,
           appBar: _buildBlurAppBar(context, auth, couple, theme),
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [

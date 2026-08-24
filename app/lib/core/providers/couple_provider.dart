@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 
@@ -44,7 +45,15 @@ class CoupleProvider extends ChangeNotifier {
   // Our Song (Music Player)
   String _loveSongTitle = 'Perfect';
   String _loveSongArtist = 'Ed Sheeran';
+  String? _loveSongUrl;
   bool _isSongPlaying = false;
+  AudioPlayer? _audioPlayer;
+
+  // Pet
+  String _petName = 'Corazoncito';
+  String _petType = 'puppy';
+  int _petLevel = 1;
+  int _petXp = 0;
 
   // Romantic Places
   List<dynamic> _places = [];
@@ -82,17 +91,19 @@ class CoupleProvider extends ChangeNotifier {
   List<dynamic> get letters => _letters;
   bool get isLoadingLetters => _isLoadingLetters;
 
-  String get loveSongTitle => _loveSongTitle;
-  String get loveSongArtist => _loveSongArtist;
+  String get loveSongTitle => _coupleData?['love_song_title'] ?? _loveSongTitle;
+  String get loveSongArtist => _coupleData?['love_song_artist'] ?? _loveSongArtist;
+  String? get loveSongUrl => _coupleData?['love_song_url'] ?? _loveSongUrl;
   bool get isSongPlaying => _isSongPlaying;
 
   List<dynamic> get places => _places;
   List<dynamic> get stickyNotes => _stickyNotes;
   List<dynamic> get events => _events;
 
-  int get petLevel => _coupleData?['pet_level'] ?? 1;
-  int get petXp => _coupleData?['pet_xp'] ?? 0;
-  String get petName => _coupleData?['pet_name'] ?? 'Corazoncito';
+  String get petType => _coupleData?['pet_type'] ?? _petType;
+  String get petName => _coupleData?['pet_name'] ?? _petName;
+  int get petLevel => _coupleData?['pet_level'] ?? _petLevel;
+  int get petXp => _coupleData?['pet_xp'] ?? _petXp;
 
   void loadDemoData() {
     _isPaired = true;
@@ -258,16 +269,94 @@ class CoupleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Music Player Methods
-  void togglePlaySong() {
-    _isSongPlaying = !_isSongPlaying;
+  // Pet Management Methods
+  Future<void> updatePet({required String type, required String name}) async {
+    _petType = type;
+    _petName = name;
+    if (_coupleData != null) {
+      _coupleData!['pet_type'] = type;
+      _coupleData!['pet_name'] = name;
+    }
     notifyListeners();
+
+    try {
+      await _apiService.patch('/couple/settings', {
+        'pet_type': type,
+        'pet_name': name,
+      });
+    } catch (_) {}
   }
 
-  void updateLoveSong(String title, String artist) {
+  Future<void> addPetXp(int xp) async {
+    _petXp += xp;
+    _petLevel = (_petXp ~/ 100) + 1;
+    if (_coupleData != null) {
+      _coupleData!['pet_xp'] = _petXp;
+      _coupleData!['pet_level'] = _petLevel;
+    }
+    notifyListeners();
+
+    try {
+      await _apiService.patch('/couple/settings', {
+        'pet_xp': _petXp,
+        'pet_level': _petLevel,
+      });
+    } catch (_) {}
+  }
+
+  // Music Player Methods
+  Future<void> updateLoveSong(String title, String artist, {String? url}) async {
     _loveSongTitle = title;
     _loveSongArtist = artist;
+    if (url != null) _loveSongUrl = url;
+    if (_coupleData != null) {
+      _coupleData!['love_song_title'] = title;
+      _coupleData!['love_song_artist'] = artist;
+      if (url != null) _coupleData!['love_song_url'] = url;
+    }
     notifyListeners();
+
+    try {
+      await _apiService.patch('/couple/settings', {
+        'love_song_title': title,
+        'love_song_artist': artist,
+        'love_song_url': url ?? _loveSongUrl,
+      });
+    } catch (_) {}
+  }
+
+  Future<void> togglePlaySong() async {
+    _audioPlayer ??= AudioPlayer();
+
+    if (_isSongPlaying) {
+      await _audioPlayer?.pause();
+      _isSongPlaying = false;
+      notifyListeners();
+    } else {
+      _isSongPlaying = true;
+      notifyListeners();
+      try {
+        final url = loveSongUrl;
+        if (url != null && url.isNotEmpty) {
+          if (url.startsWith('http://') || url.startsWith('https://')) {
+            await _audioPlayer?.play(UrlSource(url));
+          } else {
+            await _audioPlayer?.play(DeviceFileSource(url));
+          }
+        } else {
+          // Romantic piano melody stream fallback
+          await _audioPlayer?.play(UrlSource('https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-piano-112199.mp3'));
+        }
+
+        _audioPlayer?.onPlayerComplete.listen((_) {
+          _isSongPlaying = false;
+          notifyListeners();
+        });
+      } catch (e) {
+        _isSongPlaying = false;
+        notifyListeners();
+      }
+    }
   }
 
   // Places Methods
