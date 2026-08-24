@@ -1,12 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:home_widget/home_widget.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
 
 class WidgetsStudioScreen extends StatelessWidget {
   const WidgetsStudioScreen({super.key});
+
+  Future<void> _pinLoveCounterWidget(BuildContext context, String names, int days) async {
+    try {
+      await HomeWidget.saveWidgetData<String>('couple_names', names);
+      await HomeWidget.saveWidgetData<String>('days_count', '$days');
+      await HomeWidget.saveWidgetData<String>('days_label', 'DÍAS JUNTOS');
+      await HomeWidget.updateWidget(
+        name: 'LoveCounterWidgetProvider',
+        androidName: 'LoveCounterWidgetProvider',
+      );
+      await HomeWidget.requestPinWidget(
+        androidName: 'LoveCounterWidgetProvider',
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✨ Toca "Añadir" en el mensaje de tu teléfono para colocar el widget.'),
+            duration: Duration(seconds: 4),
+            backgroundColor: AppTheme.primaryRose,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Para añadirlo: mantén presionado en tu pantalla de inicio > "Widgets" > "My Heart"'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: AppTheme.primaryRose,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,15 +130,8 @@ class WidgetsStudioScreen extends StatelessWidget {
                 title: '1. Widget Contador de Amor 💕',
                 subtitle: 'Muestra sus días juntos y la foto de ambos siempre visible.',
                 widgetPreview: _buildLoveCounterWidgetPreview(userName, partnerName, couple.daysTogether),
-                onAdd: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('💡 Para añadirlo en Android: mantén presionado en tu pantalla de inicio > "Widgets" > "My Heart"'),
-                      duration: Duration(seconds: 4),
-                      backgroundColor: AppTheme.primaryRose,
-                    ),
-                  );
-                },
+                buttonLabel: '📌 Añadir a mi Pantalla de Inicio',
+                onAdd: () => _pinLoveCounterWidget(context, '$userName & $partnerName ♥', couple.daysTogether),
               ),
 
               const SizedBox(height: 20),
@@ -158,6 +185,7 @@ class WidgetsStudioScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     required Widget widgetPreview,
+    String buttonLabel = '📌 Añadir a mi Pantalla de Inicio',
     required VoidCallback onAdd,
   }) {
     return Container(
@@ -212,7 +240,7 @@ class WidgetsStudioScreen extends StatelessWidget {
               ),
               onPressed: onAdd,
               icon: const Icon(Icons.add_to_home_screen_rounded, size: 18),
-              label: const Text('Cómo Añadir al Celular', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              label: Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ),
           ),
         ],

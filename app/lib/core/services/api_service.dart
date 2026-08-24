@@ -111,6 +111,26 @@ class ApiService {
     }
   }
 
+  // Generic DELETE with Timeout
+  Future<dynamic> delete(String endpoint) async {
+    try {
+      final response = await http
+          .delete(
+            Uri.parse('$_baseUrl$endpoint'),
+            headers: _headers(),
+          )
+          .timeout(const Duration(seconds: 15));
+      return _handleResponse(response);
+    } on TimeoutException {
+      throw Exception('El servidor está iniciando en la nube. Espera unos segundos e intenta de nuevo.');
+    } catch (e) {
+      if (e.toString().contains('SocketException') || e.toString().contains('Failed host lookup')) {
+        throw Exception('No hay conexión a internet o el servidor no responde.');
+      }
+      rethrow;
+    }
+  }
+
   dynamic _handleResponse(http.Response response) {
     try {
       final data = jsonDecode(response.body);

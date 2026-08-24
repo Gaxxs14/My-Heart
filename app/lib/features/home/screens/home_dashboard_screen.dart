@@ -163,22 +163,83 @@ class HomeDashboardScreen extends StatelessWidget {
                 subtitle: Text('Mascota: ${couple.petName} (Nivel ${couple.petLevel})'),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange.shade800,
+                        side: BorderSide(color: Colors.orange.shade300),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        auth.logout();
+                      },
+                      icon: const Icon(Icons.logout_rounded, size: 18),
+                      label: const Text('Cerrar Sesión'),
+                    ),
                   ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    auth.logout();
-                  },
-                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
-                  label: const Text('Cerrar Sesión / Salir'),
-                ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () {
+                        _showDeleteAccountConfirmation(context, auth);
+                      },
+                      icon: const Icon(Icons.delete_forever_rounded, color: Colors.white, size: 18),
+                      label: const Text('Eliminar Cuenta', style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showDeleteAccountConfirmation(BuildContext context, AuthProvider auth) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+              SizedBox(width: 8),
+              Text('¿Eliminar Cuenta? 🗑️', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ],
+          ),
+          content: const Text(
+            'Esta acción eliminará de forma permanente tu usuario, tus recuerdos, cartas, metas y datos en la base de datos sin dejar ningún registro huérfano.\n\n¿Estás completamente seguro/a?',
+            style: TextStyle(fontSize: 13, color: Color(0xFF424242)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              onPressed: () async {
+                Navigator.pop(context);
+                final success = await auth.deleteAccount();
+                if (context.mounted && success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Tu cuenta y todos tus datos fueron eliminados con éxito.')),
+                  );
+                }
+              },
+              child: const Text('Sí, Eliminar Todo', style: TextStyle(color: Colors.white)),
+            ),
+          ],
         );
       },
     );

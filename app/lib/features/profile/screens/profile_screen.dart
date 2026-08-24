@@ -267,11 +267,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
 
+              const SizedBox(height: 24),
+
+              // Danger Zone: Delete Account
+              Text(
+                'Zona de Cuenta',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 12),
+
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: Colors.red.shade100),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Eliminar Cuenta y Todos los Datos 🗑️',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.redAccent),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Borra de forma permanente tu usuario, recuerdos y datos de la base de datos sin dejar registros huérfanos.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: const BorderSide(color: Colors.redAccent),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: () {
+                          _showDeleteAccountDialog(context, auth);
+                        },
+                        icon: const Icon(Icons.delete_forever_rounded, size: 18),
+                        label: const Text('Eliminar Mi Cuenta Permanentemente'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 30),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+              SizedBox(width: 8),
+              Text('¿Eliminar Cuenta? 🗑️', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ],
+          ),
+          content: const Text(
+            'Esta acción es definitiva. Se eliminará tu cuenta y se desvinculará a tu pareja limpiamente sin dejar registros huérfanos.',
+            style: TextStyle(fontSize: 13, color: Color(0xFF424242)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              onPressed: () async {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context); // Close Profile screen
+                final success = await auth.deleteAccount();
+                if (context.mounted && success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Cuenta eliminada correctamente.')),
+                  );
+                }
+              },
+              child: const Text('Sí, Eliminar Permanentemente', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     );
   }
 

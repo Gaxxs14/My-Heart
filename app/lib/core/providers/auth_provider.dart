@@ -236,6 +236,31 @@ class AuthProvider extends ChangeNotifier {
     _currentUser = null;
     _partnerUser = null;
     _isAuthenticated = false;
+    _isDemoMode = false;
     notifyListeners();
+  }
+
+  Future<bool> deleteAccount() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      if (!_isDemoMode) {
+        await _apiService.delete('/auth/delete-account');
+      }
+      await _apiService.setToken(null);
+      _currentUser = null;
+      _partnerUser = null;
+      _isAuthenticated = false;
+      _isDemoMode = false;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }

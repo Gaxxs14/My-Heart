@@ -130,6 +130,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     final auth = Provider.of<AuthProvider>(context);
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -139,119 +140,137 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.zero,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 12),
 
-              // Glowing Heart
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.softPink,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryRose.withOpacity(0.25),
-                      blurRadius: 20,
+                        // Glowing Heart
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.softPink,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryRose.withOpacity(0.25),
+                                blurRadius: 20,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.favorite_rounded,
+                            color: AppTheme.primaryRose,
+                            size: 36,
+                          ),
+                        ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
+                              begin: const Offset(1, 1),
+                              end: const Offset(1.1, 1.1),
+                              duration: 1000.ms,
+                            ),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          'My Heart',
+                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                color: AppTheme.deepWine,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 24,
+                              ),
+                        ),
+
+                        const SizedBox(height: 2),
+
+                        const Text(
+                          'Elige cómo deseas entrar a tu espacio',
+                          style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Tab Bar
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppTheme.softPink.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: TabBar(
+                              controller: _tabController,
+                              indicator: BoxDecoration(
+                                color: AppTheme.primaryRose,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              indicatorSize: TabBarIndicatorSize.tab,
+                              labelColor: Colors.white,
+                              unselectedLabelColor: AppTheme.deepWine,
+                              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              tabs: const [
+                                Tab(text: '✨ Rápido'),
+                                Tab(text: '🔗 Tengo Código'),
+                                Tab(text: '🔑 Con Correo'),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Tab Bar View with fixed min height for clean typing
+                        SizedBox(
+                          height: 380,
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              // Tab 1: Quick Start (No email, no password!)
+                              _buildQuickStartTab(auth),
+
+                              // Tab 2: Quick Link (Partner's code)
+                              _buildQuickLinkTab(auth),
+
+                              // Tab 3: Classic Email Login
+                              _buildClassicLoginTab(auth),
+                            ],
+                          ),
+                        ),
+
+                        const Spacer(),
+
+                        // Demo Mode Button (Explore without partner)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                          child: TextButton.icon(
+                            onPressed: () {
+                              final couple = Provider.of<CoupleProvider>(context, listen: false);
+                              auth.enterDemoMode(name: 'Gabriel', nickname: 'Mi Amor');
+                              couple.loadDemoData();
+                            },
+                            icon: const Icon(Icons.explore_rounded, color: AppTheme.primaryRose, size: 18),
+                            label: const Text(
+                              '🚀 Explorar todo en Modo Demo (Sin vinculación)',
+                              style: TextStyle(
+                                color: AppTheme.primaryRose,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                      ],
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.favorite_rounded,
-                  color: AppTheme.primaryRose,
-                  size: 42,
-                ),
-              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                    begin: const Offset(1, 1),
-                    end: const Offset(1.1, 1.1),
-                    duration: 1000.ms,
-                  ),
-
-              const SizedBox(height: 12),
-
-              Text(
-                'My Heart',
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: AppTheme.deepWine,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-
-              const SizedBox(height: 4),
-
-              const Text(
-                'Elige cómo deseas entrar a tu espacio',
-                style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Tab Bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppTheme.softPink.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: AppTheme.primaryRose,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    labelColor: Colors.white,
-                    unselectedLabelColor: AppTheme.deepWine,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                    tabs: const [
-                      Tab(text: '✨ Rápido'),
-                      Tab(text: '🔗 Tengo Código'),
-                      Tab(text: '🔑 Con Correo'),
-                    ],
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Tab 1: Quick Start (No email, no password!)
-                    _buildQuickStartTab(auth),
-
-                    // Tab 2: Quick Link (Partner's code)
-                    _buildQuickLinkTab(auth),
-
-                    // Tab 3: Classic Email Login
-                    _buildClassicLoginTab(auth),
-                  ],
-                ),
-              ),
-
-              // Demo Mode Button (Explore without partner)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                child: TextButton.icon(
-                  onPressed: () {
-                    final couple = Provider.of<CoupleProvider>(context, listen: false);
-                    auth.enterDemoMode(name: 'Gabriel', nickname: 'Mi Amor');
-                    couple.loadDemoData();
-                  },
-                  icon: const Icon(Icons.explore_rounded, color: AppTheme.primaryRose, size: 18),
-                  label: const Text(
-                    '🚀 Explorar todo en Modo Demo (Sin vinculación)',
-                    style: TextStyle(
-                      color: AppTheme.primaryRose,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

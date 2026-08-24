@@ -238,3 +238,43 @@ export const updateMood = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ error: 'Error interno del servidor.' });
   }
 };
+
+export const deleteAccount = async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
+  try {
+    // 1. Get user couple_id
+    const userRes = await pool.query('SELECT couple_id, partner_id FROM users WHERE id = $1', [userId]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    const { couple_id, partner_id } = userRes.rows[0];
+
+    // 2. Unlink partner if any
+    if (partner_id) {
+      await pool.query('UPDATE users SET partner_id = NULL, couple_id = NULL WHERE id = $1', [partner_id]);
+    }
+
+    // 3. Delete couple data and dependent records if couple exists
+    if (couple_id) {
+      await pool.query('DELETE FROM memories WHERE couple_id = $1', [couple_id]);
+      await pool.query('DELETE FROM bucket_list_items WHERE couple_id = $1', [couple_id]);
+      await pool.query('DELETE FROM letters WHERE couple_id = $1', [couple_id]);
+      await pool.query('DELETE FROM daily_answers WHERE couple_id = $1', [couple_id]);
+      await pool.query('DELETE FROM couples WHERE id = $1', [couple_id]);
+    }
+
+    // 4. Delete user record completely
+    await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    return res.json({ message: 'Cuenta y todos los registros asociados eliminados permanentemente.' });
+  } catch (error) {
+    console.error('Error al eliminar cuenta:', error);
+    return res.status(500).json({ error: 'Error interno al eliminar la cuenta.' });
+  }
+};
+
