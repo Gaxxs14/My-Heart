@@ -73,10 +73,6 @@ class AuthGateway extends StatelessWidget {
       return const LoginScreen();
     }
 
-    if (!auth.isPaired && !couple.isPaired) {
-      return const PairingScreen();
-    }
-
     return const MainNavigationScreen();
   }
 }

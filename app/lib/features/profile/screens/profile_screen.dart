@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/theme_provider.dart';
+import '../../pairing/screens/pairing_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -139,10 +140,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       userName,
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
-                    Text(
-                      'Vinculado a: $partnerName',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
+                    const SizedBox(height: 4),
+                    if (auth.isPaired)
+                      Text(
+                        'Vinculado a: $partnerName 💕',
+                        style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      )
+                    else
+                      InkWell(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PairingScreen()),
+                        ),
+                        child: Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: theme.softAccentColor.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.link_rounded, size: 16, color: theme.primaryColor),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Vincular con mi Pareja 💖',
+                                style: TextStyle(
+                                  color: theme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

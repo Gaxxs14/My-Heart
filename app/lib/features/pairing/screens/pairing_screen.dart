@@ -60,12 +60,17 @@ class _PairingScreenState extends State<PairingScreen> with SingleTickerProvider
 
     if (success) {
       await auth.checkAuthStatus();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('¡Conectados con éxito! 💖 Bienvenidos a su espacio.'),
-          backgroundColor: AppTheme.primaryRose,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Conectados con éxito! 💖 Bienvenidos a su espacio.'),
+            backgroundColor: AppTheme.primaryRose,
+          ),
+        );
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      }
     } else if (couple.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -114,8 +119,14 @@ class _PairingScreenState extends State<PairingScreen> with SingleTickerProvider
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.deepWine),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Text(
-          'Vincular Pareja',
+          'Vincular Pareja 💖',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: AppTheme.deepWine,
                 fontWeight: FontWeight.bold,

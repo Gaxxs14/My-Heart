@@ -16,6 +16,7 @@ import '../../places/screens/places_map_screen.dart';
 import '../../games/screens/couple_games_hub_screen.dart';
 import '../../calendar/screens/couple_calendar_screen.dart';
 import '../../sticky_notes/widgets/sticky_notes_board.dart';
+import '../../pairing/screens/pairing_screen.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
@@ -111,7 +112,7 @@ class HomeDashboardScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _settingsUserTile(auth, theme, ctx, context),
             const Divider(height: 24),
-            _settingsCoupleTile(auth, couple, theme),
+            _settingsCoupleTile(auth, couple, theme, ctx, context),
             const SizedBox(height: 20),
             Row(children: [
               Expanded(
@@ -172,7 +173,32 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _settingsCoupleTile(AuthProvider auth, CoupleProvider couple, ThemeProvider theme) {
+  Widget _settingsCoupleTile(AuthProvider auth, CoupleProvider couple, ThemeProvider theme, BuildContext sheetCtx, BuildContext navCtx) {
+    if (!auth.isPaired) {
+      return ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Container(
+          width: 48, height: 48,
+          decoration: BoxDecoration(color: theme.softAccentColor, shape: BoxShape.circle),
+          child: Center(child: Icon(Icons.link_rounded, color: theme.primaryColor, size: 24)),
+        ),
+        title: const Text('Pareja: No vinculada', style: TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: const Text('Toca para vincular a tu amor', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+        trailing: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.primaryColor,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            shape: const StadiumBorder(),
+          ),
+          onPressed: () {
+            Navigator.pop(sheetCtx);
+            Navigator.of(navCtx).push(MaterialPageRoute(builder: (_) => const PairingScreen()));
+          },
+          child: const Text('Vincular', style: TextStyle(fontSize: 12, color: Colors.white)),
+        ),
+      );
+    }
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Container(
@@ -260,8 +286,13 @@ class HomeDashboardScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // 0. Pairing Callout Banner (if not paired yet)
+                      if (!auth.isPaired)
+                        _buildPairingCalloutBanner(context, theme)
+                            .animate().fadeIn(duration: 350.ms).slideY(begin: -0.05, end: 0),
+
                       // 1. Dual Avatars Hero
-                      _buildDualAvatarsSection(context, auth.currentUser, auth.partnerUser, theme)
+                      _buildDualAvatarsSection(context, auth.currentUser, auth.partnerUser, theme, auth.isPaired)
                           .animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0),
 
                       const SizedBox(height: 16),
@@ -368,6 +399,92 @@ class HomeDashboardScreen extends StatelessWidget {
   }
 
 
+  Widget _buildPairingCalloutBanner(BuildContext context, ThemeProvider theme) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PairingScreen()),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.primaryColor.withOpacity(0.12),
+              theme.primaryColor.withOpacity(0.03),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(color: theme.primaryColor.withOpacity(0.25), width: 1.2),
+          boxShadow: AppTheme.cardShadow,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: theme.mainGradient,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.primaryColor.withOpacity(0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(Icons.link_rounded, color: Colors.white, size: 22),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '¡Vincula a tu Pareja! 💖',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: theme.secondaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Comparte tu código o ingresa el de tu amor para conectar su espacio.',
+                    style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                gradient: theme.mainGradient,
+                borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.primaryColor.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Text(
+                'Vincular',
+                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── Dual Avatars Hero ────────────────────────────────────────────────────
 
   Widget _buildDualAvatarsSection(
@@ -375,6 +492,7 @@ class HomeDashboardScreen extends StatelessWidget {
     Map<String, dynamic>? user,
     Map<String, dynamic>? partner,
     ThemeProvider theme,
+    bool isPaired,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
@@ -398,13 +516,97 @@ class HomeDashboardScreen extends StatelessWidget {
             ),
           ),
           _buildHeartBridge(theme),
-          _buildAvatar(
-            name: partner?['nickname'] ?? partner?['name'] ?? 'Mi Amor',
-            mood: partner?['mood_status'] ?? 'Pensando en ti 💭',
-            icon: partner?['mood_icon'] ?? '💭',
-            isMe: false,
-            isOnline: partner?['is_online'] ?? true,
-            theme: theme,
+          if (isPaired && partner != null && partner['id'] != null)
+            _buildAvatar(
+              name: partner['nickname'] ?? partner['name'] ?? 'Mi Amor',
+              mood: partner['mood_status'] ?? 'Pensando en ti 💭',
+              icon: partner['mood_icon'] ?? '💭',
+              isMe: false,
+              isOnline: partner['is_online'] ?? true,
+              theme: theme,
+            )
+          else
+            _buildUnpairedPartnerAvatar(context, theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnpairedPartnerAvatar(BuildContext context, ThemeProvider theme) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PairingScreen()),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 82,
+                height: 82,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.softAccentColor.withOpacity(0.4),
+                ),
+              )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scale(begin: const Offset(1, 1), end: const Offset(1.08, 1.08), duration: 1500.ms),
+              Positioned.fill(
+                child: Center(
+                  child: Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(
+                        color: theme.primaryColor,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.primaryColor.withOpacity(0.18),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: theme.primaryColor,
+                        size: 36,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)],
+                    border: Border.all(color: theme.softAccentColor, width: 1.5),
+                  ),
+                  child: const Text('💖', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Tu Pareja',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textDark),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Toca para vincular 💕',
+            style: TextStyle(fontSize: 11, color: theme.primaryColor, fontWeight: FontWeight.w600),
           ),
         ],
       ),
