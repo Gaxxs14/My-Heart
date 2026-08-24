@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 
@@ -14,7 +15,7 @@ export const register = async (req: Request, res: Response) => {
   }
 
   try {
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: 'Ya existe una cuenta con este correo electrónico.' });
     }
@@ -26,7 +27,7 @@ export const register = async (req: Request, res: Response) => {
       `INSERT INTO users (email, password_hash, name, nickname)
        VALUES ($1, $2, $3, $4)
        RETURNING id, email, name, nickname, avatar_url, mood_status, mood_icon, couple_id, created_at`,
-      [email, password_hash, name, nickname || name]
+      [email.toLowerCase().trim(), password_hash, name.trim(), (nickname || name).trim()]
     );
 
     const user = result.rows[0];
@@ -53,18 +54,18 @@ export const login = async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT id, email, password_hash, name, nickname, avatar_url, mood_status, mood_icon, couple_id, partner_id
-       FROM users WHERE email = $1`,
-      [email]
+       FROM users WHERE LOWER(email) = LOWER($1)`,
+      [email.trim()]
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas.' });
+      return res.status(401).json({ error: 'No existe una cuenta con este correo. ¿Deseas registrarte?' });
     }
 
     const user = result.rows[0];
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Credenciales inválidas.' });
+      return res.status(401).json({ error: 'Contraseña incorrecta. Inténtalo de nuevo.' });
     }
 
     delete user.password_hash;
@@ -77,6 +78,114 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error al iniciar sesión:', error);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+};
+
+// Quick Start: Enter with just Name and Nickname (Frictionless)
+export const quickStart = async (req: Request, res: Response) => {
+  const { name, nickname, pin } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Ingresa tu nombre para continuar.' });
+  }
+
+  try {
+    const uniqueId = uuidv4().substring(0, 8);
+    const autoEmail = `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}_${uniqueId}@myheart.app`;
+    const password = pin || uuidv4();
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    const result = await pool.query(
+      `INSERT INTO users (email, password_hash, name, nickname)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, email, name, nickname, avatar_url, mood_status, mood_icon, couple_id, created_at`,
+      [autoEmail, password_hash, name.trim(), (nickname || name).trim()]
+    );
+
+    const user = result.rows[0];
+    const token = jwt.sign({ id: user.id, email: user.email, couple_id: user.couple_id }, JWT_SECRET, { expiresIn: '90d' });
+
+    return res.status(201).json({
+      message: '¡Bienvenido a My Heart! Sesión iniciada.',
+      user,
+      token,
+    });
+  } catch (error) {
+    console.error('Error en quickStart:', error);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+};
+
+// Quick Link: Enter with Name + Partner's Pairing Code directly in 1 step!
+export const quickLink = async (req: Request, res: Response) => {
+  const { name, nickname, pairing_code, anniversary_date } = req.body;
+
+  if (!name || !pairing_code) {
+    return res.status(400).json({ error: 'Nombre y código de pareja son requeridos.' });
+  }
+
+  const formattedCode = pairing_code.trim().toUpperCase();
+
+  try {
+    // Check if pairing code exists
+    const coupleRes = await pool.query(
+      'SELECT id, user1_id, user2_id, status FROM couples WHERE pairing_code = $1',
+      [formattedCode]
+    );
+
+    if (coupleRes.rows.length === 0) {
+      return res.status(404).json({ error: 'El código de pareja no existe o es incorrecto.' });
+    }
+
+    const couple = coupleRes.rows[0];
+    if (couple.status === 'active' || couple.user2_id) {
+      return res.status(400).json({ error: 'Este código ya ha sido utilizado.' });
+    }
+
+    const partnerId = couple.user1_id;
+
+    // Create user
+    const uniqueId = uuidv4().substring(0, 8);
+    const autoEmail = `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}_${uniqueId}@myheart.app`;
+    const password = uuidv4();
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    const userRes = await pool.query(
+      `INSERT INTO users (email, password_hash, name, nickname, couple_id, partner_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, email, name, nickname, avatar_url, mood_status, mood_icon, couple_id, partner_id, created_at`,
+      [autoEmail, password_hash, name.trim(), (nickname || name).trim(), couple.id, partnerId]
+    );
+
+    const user = userRes.rows[0];
+
+    // Update couple with user2 and active status
+    await pool.query(
+      `UPDATE couples
+       SET user2_id = $1,
+           status = 'active',
+           anniversary_date = COALESCE($2, CURRENT_DATE),
+           relationship_time_start = COALESCE($2, CURRENT_TIMESTAMP),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [user.id, anniversary_date || null, couple.id]
+    );
+
+    // Update user1 with partner_id and couple_id
+    await pool.query('UPDATE users SET couple_id = $1, partner_id = $2 WHERE id = $3', [couple.id, user.id, partnerId]);
+
+    const token = jwt.sign({ id: user.id, email: user.email, couple_id: couple.id }, JWT_SECRET, { expiresIn: '90d' });
+
+    return res.status(201).json({
+      message: '¡Conexión mágica exitosa! 💖',
+      user,
+      token,
+    });
+  } catch (error) {
+    console.error('Error en quickLink:', error);
     return res.status(500).json({ error: 'Error interno del servidor.' });
   }
 };

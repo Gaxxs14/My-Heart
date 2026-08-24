@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getProfile, updateMood } from '../controllers/auth.controller';
+import { register, login, quickStart, quickLink, getProfile, updateMood } from '../controllers/auth.controller';
 import { getPairingStatus, createPairingCode, linkPartnerByCode, updateCoupleSettings } from '../controllers/couple.controller';
 import { getTodayQuestion, answerQuestion, getAnswerHistory } from '../controllers/questions.controller';
 import { createMemory, getMemories } from '../controllers/memories.controller';
@@ -17,6 +17,8 @@ router.get('/health', (req, res) => {
 // Auth Routes (Public)
 router.post('/auth/register', register);
 router.post('/auth/login', login);
+router.post('/auth/quick-start', quickStart);
+router.post('/auth/quick-link', quickLink);
 
 // Protected Routes (Require JWT)
 router.use(authenticateToken);
