@@ -531,6 +531,35 @@ class CoupleProvider extends ChangeNotifier {
     }
   }
 
+  // Anniversary Update Method
+  Future<bool> updateAnniversaryDate(DateTime picked) async {
+    final dateStr = picked.toIso8601String().split('T').first;
+    if (_coupleData != null) {
+      _coupleData!['anniversary_date'] = dateStr;
+      _coupleData!['relationship_time_start'] = picked.toIso8601String();
+    } else {
+      _coupleData = {
+        'anniversary_date': dateStr,
+        'relationship_time_start': picked.toIso8601String(),
+      };
+    }
+    _startLoveTicker();
+    notifyListeners();
+
+    try {
+      final res = await _apiService.patch('/couple/settings', {
+        'anniversary_date': dateStr,
+      });
+      if (res['couple'] != null) {
+        _coupleData = res['couple'];
+        _startLoveTicker();
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // Real-time Love Ticker
   void _startLoveTicker() {
     _tickerTimer?.cancel();

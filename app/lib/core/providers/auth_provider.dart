@@ -175,6 +175,31 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateProfile({String? name, String? nickname, String? avatarUrl}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final res = await _apiService.patch('/auth/profile', {
+        if (name != null) 'name': name.trim(),
+        if (nickname != null) 'nickname': nickname.trim(),
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
+      });
+
+      if (res['user'] != null) {
+        _currentUser = res['user'];
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> updateMood(String moodStatus, String moodIcon) async {
     try {
       await _apiService.patch('/auth/mood', {

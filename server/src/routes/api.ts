@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, quickStart, quickLink, getProfile, updateMood, deleteAccount } from '../controllers/auth.controller';
+import { register, login, quickStart, quickLink, getProfile, updateProfile, updateMood, deleteAccount } from '../controllers/auth.controller';
 import { getPairingStatus, createPairingCode, linkPartnerByCode, updateCoupleSettings } from '../controllers/couple.controller';
 import { getTodayQuestion, answerQuestion, getAnswerHistory } from '../controllers/questions.controller';
 import { createMemory, getMemories } from '../controllers/memories.controller';
@@ -25,6 +25,7 @@ router.use(authenticateToken);
 
 // User & Mood
 router.get('/auth/profile', getProfile);
+router.patch('/auth/profile', updateProfile);
 router.patch('/auth/mood', updateMood);
 router.delete('/auth/delete-account', deleteAccount);
 

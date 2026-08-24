@@ -230,6 +230,32 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  const { name, nickname, avatar_url } = req.body;
+  const userId = req.user?.id;
+
+  try {
+    const result = await pool.query(
+      `UPDATE users
+       SET name = COALESCE($1, name),
+           nickname = COALESCE($2, nickname),
+           avatar_url = COALESCE($3, avatar_url),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4
+       RETURNING id, username, email, name, nickname, avatar_url, mood_status, mood_icon, couple_id, partner_id`,
+      [name, nickname, avatar_url, userId]
+    );
+
+    return res.json({
+      message: 'Perfil actualizado con éxito.',
+      user: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error al actualizar perfil:', error);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+};
+
 export const updateMood = async (req: AuthRequest, res: Response) => {
   const { mood_status, mood_icon } = req.body;
   const userId = req.user?.id;

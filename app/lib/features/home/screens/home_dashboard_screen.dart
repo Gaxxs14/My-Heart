@@ -1,4 +1,6 @@
 import 'dart:ui';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -249,16 +251,18 @@ class HomeDashboardScreen extends StatelessWidget {
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now().subtract(const Duration(days: 365)),
-      firstDate: DateTime(2000),
+      firstDate: DateTime(1990),
       lastDate: DateTime.now(),
       helpText: '¿CUÁNDO COMENZÓ SU HISTORIA?',
     );
-    if (picked != null && couple.coupleData != null && context.mounted) {
-      couple.coupleData!['anniversary_date'] = picked.toIso8601String().split('T').first;
-      couple.coupleData!['relationship_time_start'] = picked.toIso8601String();
-      couple.notifyListeners();
+    if (picked != null && context.mounted) {
+      await couple.updateAnniversaryDate(picked);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Aniversario: ${DateFormat('dd MMM yyyy').format(picked)} 💖')),
+        SnackBar(
+          content: Text('¡Aniversario guardado: ${DateFormat('dd MMM yyyy').format(picked)}! 💖'),
+          backgroundColor: AppTheme.primaryRose,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -509,6 +513,7 @@ class HomeDashboardScreen extends StatelessWidget {
             onTap: () => _showMoodPicker(context),
             child: _buildAvatar(
               name: user?['nickname'] ?? user?['name'] ?? 'Tú',
+              avatarUrl: user?['avatar_url'],
               mood: user?['mood_status'] ?? 'Enamorado/a 🥰',
               icon: user?['mood_icon'] ?? '🥰',
               isMe: true,
@@ -519,6 +524,7 @@ class HomeDashboardScreen extends StatelessWidget {
           if (isPaired && partner != null && partner['id'] != null)
             _buildAvatar(
               name: partner['nickname'] ?? partner['name'] ?? 'Mi Amor',
+              avatarUrl: partner['avatar_url'],
               mood: partner['mood_status'] ?? 'Pensando en ti 💭',
               icon: partner['mood_icon'] ?? '💭',
               isMe: false,
@@ -666,12 +672,27 @@ class HomeDashboardScreen extends StatelessWidget {
 
   Widget _buildAvatar({
     required String name,
+    String? avatarUrl,
     required String mood,
     required String icon,
     required bool isMe,
     bool isOnline = false,
     required ThemeProvider theme,
   }) {
+    ImageProvider? imgProvider;
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      if (avatarUrl.startsWith('data:image')) {
+        try {
+          final b64 = avatarUrl.split(',').last;
+          imgProvider = MemoryImage(base64Decode(b64));
+        } catch (_) {}
+      } else if (avatarUrl.startsWith('http')) {
+        imgProvider = NetworkImage(avatarUrl);
+      } else if (avatarUrl.startsWith('/')) {
+        imgProvider = FileImage(File(avatarUrl));
+      }
+    }
+
     return Column(
       children: [
         Stack(
@@ -708,6 +729,9 @@ class HomeDashboardScreen extends StatelessWidget {
                     gradient: isMe ? theme.mainGradient : LinearGradient(
                       colors: [theme.secondaryColor, theme.secondaryColor.withOpacity(0.7)],
                     ),
+                    image: imgProvider != null
+                        ? DecorationImage(image: imgProvider, fit: BoxFit.cover)
+                        : null,
                     boxShadow: [
                       BoxShadow(
                         color: (isMe ? theme.primaryColor : theme.secondaryColor).withOpacity(0.28),
@@ -716,12 +740,14 @@ class HomeDashboardScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '♥',
-                      style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                  child: imgProvider == null
+                      ? Center(
+                          child: Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : '♥',
+                            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                          ),
+                        )
+                      : null,
                 ),
               ),
             ),

@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../pairing/screens/pairing_screen.dart';
 
@@ -36,15 +38,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickAvatar() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 600, maxHeight: 600);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 400,
+      maxHeight: 400,
+      imageQuality: 70,
+    );
     if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
       setState(() {
         _avatarFile = File(picked.path);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Foto de perfil seleccionada! 📸')),
-      );
+
+      if (!mounted) return;
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final success = await auth.updateProfile(avatarUrl: base64Image);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? '¡Foto de perfil guardada con éxito! 📸💖' : 'Error al guardar foto en el servidor.',
+            ),
+            backgroundColor: success ? AppTheme.primaryRose : Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
+  }
+
+  ImageProvider? _resolveAvatarImage(String? avatarUrl) {
+    if (_avatarFile != null) {
+      return FileImage(_avatarFile!);
+    }
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      if (avatarUrl.startsWith('data:image')) {
+        try {
+          final b64 = avatarUrl.split(',').last;
+          return MemoryImage(base64Decode(b64));
+        } catch (_) {}
+      } else if (avatarUrl.startsWith('http')) {
+        return NetworkImage(avatarUrl);
+      } else if (avatarUrl.startsWith('/')) {
+        return FileImage(File(avatarUrl));
+      }
+    }
+    return null;
   }
 
   @override
@@ -54,7 +96,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final theme = Provider.of<ThemeProvider>(context);
 
     final userName = auth.currentUser?['name'] ?? 'Usuario';
+    final userAvatar = auth.currentUser?['avatar_url'];
     final partnerName = auth.partnerUser?['name'] ?? 'Mi Amor';
+    final avatarProvider = _resolveAvatarImage(userAvatar);
 
     return Scaffold(
       appBar: AppBar(
@@ -94,9 +138,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: theme.mainGradient,
-                            image: _avatarFile != null
+                            image: avatarProvider != null
                                 ? DecorationImage(
-                                    image: FileImage(_avatarFile!),
+                                    image: avatarProvider,
                                     fit: BoxFit.cover,
                                   )
                                 : null,
@@ -108,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ],
                           ),
-                          child: _avatarFile == null
+                          child: avatarProvider == null
                               ? Center(
                                   child: Text(
                                     userName.isNotEmpty ? userName[0].toUpperCase() : '♥',
@@ -281,17 +325,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          final myNick = _nicknameController.text.trim();
+                          final partnerNick = _partnerNicknameController.text.trim();
+
                           if (auth.currentUser != null) {
-                            auth.currentUser!['nickname'] = _nicknameController.text.trim();
+                            auth.currentUser!['nickname'] = myNick;
                           }
                           if (auth.partnerUser != null) {
-                            auth.partnerUser!['nickname'] = _partnerNicknameController.text.trim();
+                            auth.partnerUser!['nickname'] = partnerNick;
                           }
                           auth.notifyListeners();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('¡Apodos guardados con éxito! 💖')),
-                          );
+
+                          await auth.updateProfile(nickname: myNick);
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('¡Apodos guardados con éxito! 💖'),
+                                backgroundColor: AppTheme.primaryRose,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
                         },
                         child: const Text('Guardar Apodos'),
                       ),
