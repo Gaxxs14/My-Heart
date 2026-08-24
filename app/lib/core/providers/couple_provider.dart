@@ -92,12 +92,12 @@ class CoupleProvider extends ChangeNotifier {
         'category': 'deep',
         'question_text': '¿Cuál fue el momento exacto en que te diste cuenta de que te gustaba?',
       },
-      'user_answered': true,
-      'user_answer': 'El día que fuimos por café y nos quedamos hablando por horas bajo la lluvia ☕🌧️',
+      'user_answered': false,
+      'user_answer': null,
       'partner_answered': true,
       'partner_answer': 'Cuando me hiciste reír tanto que se me cayó el helado y no te importó ensuciarte para ayudarme 🍦❤️',
-      'is_locked_for_user': false,
-      'both_answered': true,
+      'is_locked_for_user': true,
+      'both_answered': false,
     };
 
     _memories = [

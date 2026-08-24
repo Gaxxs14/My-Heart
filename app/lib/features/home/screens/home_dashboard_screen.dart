@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../widgets_studio/screens/widgets_studio_screen.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
@@ -246,6 +247,11 @@ class HomeDashboardScreen extends StatelessWidget {
 
                 // 4. Daily Spark Banner
                 _buildDailySparkBanner(context, couple),
+
+                const SizedBox(height: 16),
+
+                // 5. Widgets Studio Shortcut
+                _buildWidgetsStudioBanner(context),
 
                 const SizedBox(height: 24),
               ],
@@ -628,53 +634,74 @@ class HomeDashboardScreen extends StatelessWidget {
         // Virtual Pet Card
         Expanded(
           flex: 1,
-          child: Container(
-            height: 140,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: const Color(0xFFFFE3E8), width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryRose.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('🐾', style: TextStyle(fontSize: 32)),
-                const SizedBox(height: 4),
-                Text(
-                  couple.petName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppTheme.textDark,
+          child: GestureDetector(
+            onTap: () {
+              // Pet/feed Corazoncito
+              if (couple.coupleData != null) {
+                couple.coupleData!['pet_xp'] = (couple.coupleData!['pet_xp'] as int) + 5;
+                couple.notifyListeners();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('¡Acariciaste a ${couple.petName}! 🐾 +5 XP 💕'),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: AppTheme.primaryRose,
                   ),
-                ),
-                Text(
-                  'Nivel ${couple.petLevel}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.primaryRose,
-                    fontWeight: FontWeight.w600,
+                );
+              }
+            },
+            child: Container(
+              height: 140,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFFFE3E8), width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryRose.withOpacity(0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: (couple.petXp % 100) / 100.0,
-                    backgroundColor: AppTheme.softPink,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryRose),
-                    minHeight: 6,
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('🐾', style: TextStyle(fontSize: 32)),
+                  const SizedBox(height: 4),
+                  Text(
+                    couple.petName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppTheme.textDark,
+                    ),
                   ),
-                ),
-              ],
+                  Text(
+                    'Nivel ${couple.petLevel}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.primaryRose,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: (couple.petXp % 100) / 100.0,
+                      backgroundColor: AppTheme.softPink,
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryRose),
+                      minHeight: 6,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    '(Toca para acariciar)',
+                    style: TextStyle(fontSize: 9, color: AppTheme.primaryRose),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -726,6 +753,65 @@ class HomeDashboardScreen extends StatelessWidget {
           ),
           const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.primaryRose),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWidgetsStudioBanner(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const WidgetsStudioScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFFFE3E8), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryRose.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: AppTheme.softPink,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.widgets_rounded, color: AppTheme.primaryRose, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'Widgets de Pantalla de Inicio 📱',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppTheme.deepWine,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Ver vistas previas y cómo agregarlos a tu celular.',
+                    style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.primaryRose),
+          ],
+        ),
       ),
     );
   }
