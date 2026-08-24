@@ -41,6 +41,20 @@ class CoupleProvider extends ChangeNotifier {
   List<dynamic> _letters = [];
   bool _isLoadingLetters = false;
 
+  // Our Song (Music Player)
+  String _loveSongTitle = 'Perfect';
+  String _loveSongArtist = 'Ed Sheeran';
+  bool _isSongPlaying = false;
+
+  // Romantic Places
+  List<dynamic> _places = [];
+
+  // Sticky Notes (Post-its)
+  List<dynamic> _stickyNotes = [];
+
+  // Calendar Events
+  List<dynamic> _events = [];
+
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -67,6 +81,14 @@ class CoupleProvider extends ChangeNotifier {
 
   List<dynamic> get letters => _letters;
   bool get isLoadingLetters => _isLoadingLetters;
+
+  String get loveSongTitle => _loveSongTitle;
+  String get loveSongArtist => _loveSongArtist;
+  bool get isSongPlaying => _isSongPlaying;
+
+  List<dynamic> get places => _places;
+  List<dynamic> get stickyNotes => _stickyNotes;
+  List<dynamic> get events => _events;
 
   int get petLevel => _coupleData?['pet_level'] ?? 1;
   int get petXp => _coupleData?['pet_xp'] ?? 0;
@@ -165,6 +187,154 @@ class CoupleProvider extends ChangeNotifier {
       },
     ];
 
+    _places = [
+      {
+        'id': 'demo-p-1',
+        'name': 'Trattoria Bella 🍝',
+        'city': 'Centro Histórico',
+        'category': 'restaurant',
+        'date': '2024-02-14',
+        'note': 'Nuestra primera cena romántica oficial.',
+      },
+      {
+        'id': 'demo-p-2',
+        'name': 'Mirador de las Luces 🌅',
+        'city': 'Zona Alta',
+        'category': 'viewpoint',
+        'date': '2024-08-20',
+        'note': 'El mejor atardecer que hemos visto juntos.',
+      },
+      {
+        'id': 'demo-p-3',
+        'name': 'Café Aromas & Libros ☕📚',
+        'city': 'Barrio Antiguo',
+        'category': 'cafe',
+        'date': '2024-11-05',
+        'note': 'Donde nos quedamos platicando 4 horas.',
+      },
+    ];
+
+    _stickyNotes = [
+      {
+        'id': 'demo-n-1',
+        'author_name': 'Mi Amor',
+        'content': '¡Buenos días mi vida! Te amo infinito 💕 Recuerda tomar café.',
+        'color': 'pink',
+        'created_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+      },
+      {
+        'id': 'demo-n-2',
+        'author_name': 'Gabriel',
+        'content': '¿Cenamos pizza casera hoy en la noche? 🍕✨',
+        'color': 'yellow',
+        'created_at': DateTime.now().subtract(const Duration(hours: 5)).toIso8601String(),
+      },
+    ];
+
+    _events = [
+      {
+        'id': 'demo-e-1',
+        'title': 'Nuestro Aniversario 💖',
+        'date': DateTime.now().add(const Duration(days: 14)).toIso8601String().split('T').first,
+        'emoji': '🎂',
+        'type': 'anniversary',
+      },
+      {
+        'id': 'demo-e-2',
+        'title': 'Cena Romántica de Viernes 🍷',
+        'date': DateTime.now().add(const Duration(days: 4)).toIso8601String().split('T').first,
+        'emoji': '🍷',
+        'type': 'date',
+      },
+      {
+        'id': 'demo-e-3',
+        'title': 'Viaje a la Montaña 🌲⛺',
+        'date': DateTime.now().add(const Duration(days: 28)).toIso8601String().split('T').first,
+        'emoji': '⛺',
+        'type': 'trip',
+      },
+    ];
+
+    notifyListeners();
+  }
+
+  // Music Player Methods
+  void togglePlaySong() {
+    _isSongPlaying = !_isSongPlaying;
+    notifyListeners();
+  }
+
+  void updateLoveSong(String title, String artist) {
+    _loveSongTitle = title;
+    _loveSongArtist = artist;
+    notifyListeners();
+  }
+
+  // Places Methods
+  void addPlace({
+    required String name,
+    required String city,
+    required String category,
+    String? note,
+  }) {
+    _places.insert(0, {
+      'id': 'demo-p-${DateTime.now().millisecondsSinceEpoch}',
+      'name': name,
+      'city': city,
+      'category': category,
+      'date': DateTime.now().toIso8601String().split('T').first,
+      'note': note ?? '',
+    });
+    if (_coupleData != null) {
+      _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 25;
+    }
+    notifyListeners();
+  }
+
+  // Sticky Notes Methods
+  void addStickyNote({
+    required String content,
+    required String color,
+    required String authorName,
+  }) {
+    _stickyNotes.insert(0, {
+      'id': 'demo-n-${DateTime.now().millisecondsSinceEpoch}',
+      'author_name': authorName,
+      'content': content,
+      'color': color,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+    if (_coupleData != null) {
+      _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 10;
+    }
+    notifyListeners();
+  }
+
+  void deleteStickyNote(String id) {
+    _stickyNotes.removeWhere((n) => n['id'] == id);
+    notifyListeners();
+  }
+
+  // Calendar Events Methods
+  void addCalendarEvent({
+    required String title,
+    required String date,
+    required String emoji,
+    required String type,
+  }) {
+    _events.add({
+      'id': 'demo-e-${DateTime.now().millisecondsSinceEpoch}',
+      'title': title,
+      'date': date,
+      'emoji': emoji,
+      'type': type,
+    });
+    _events.sort((a, b) => a['date'].toString().compareTo(b['date'].toString()));
+    notifyListeners();
+  }
+
+  void deleteCalendarEvent(String id) {
+    _events.removeWhere((e) => e['id'] == id);
     notifyListeners();
   }
 

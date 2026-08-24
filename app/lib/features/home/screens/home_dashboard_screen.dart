@@ -9,6 +9,11 @@ import '../../widgets_studio/screens/widgets_studio_screen.dart';
 import '../../pet/screens/pet_sanctuary_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../heartbeat/widgets/heart_animation_overlay.dart';
+import '../../music/widgets/couple_music_player.dart';
+import '../../places/screens/places_map_screen.dart';
+import '../../games/screens/couple_games_hub_screen.dart';
+import '../../calendar/screens/couple_calendar_screen.dart';
+import '../../sticky_notes/widgets/sticky_notes_board.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
@@ -282,24 +287,39 @@ class HomeDashboardScreen extends StatelessWidget {
                 // 1. Dual Avatars with mood
                 _buildDualAvatarsSection(context, currentUser, partnerUser, theme),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // 2. Love Counter Card (Days, Hours, Minutes, Seconds)
+                // 2. Our Love Song (Music Player)
+                const CoupleMusicPlayer(),
+
+                const SizedBox(height: 16),
+
+                // 3. Love Counter Card (Days, Hours, Minutes, Seconds)
                 _buildLoveCounterCard(context, couple, theme),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // 3. Heartbeat Button & Pet Card
+                // 4. Quick Features Bar: Lugares 🗺️, Minijuegos 🎲, Calendario 📅
+                _buildQuickFeaturesBar(context, theme),
+
+                const SizedBox(height: 16),
+
+                // 5. Heartbeat Button & Pet Card
                 _buildHeartbeatAndPetSection(context, auth, couple, theme),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // 4. Daily Spark Banner
+                // 6. Sticky Notes Board (Post-its)
+                const StickyNotesBoard(),
+
+                const SizedBox(height: 16),
+
+                // 7. Daily Spark Banner
                 _buildDailySparkBanner(context, couple, theme),
 
                 const SizedBox(height: 16),
 
-                // 5. Widgets Studio Shortcut
+                // 8. Widgets Studio Shortcut
                 _buildWidgetsStudioBanner(context, theme),
 
                 const SizedBox(height: 24),
@@ -585,6 +605,93 @@ class HomeDashboardScreen extends StatelessWidget {
               style: TextStyle(color: Colors.white70, fontSize: 10),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickFeaturesBar(BuildContext context, ThemeProvider theme) {
+    return Row(
+      children: [
+        _buildFeatureButton(
+          context,
+          emoji: '🗺️',
+          label: 'Lugares',
+          theme: theme,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PlacesMapScreen()),
+            );
+          },
+        ),
+        const SizedBox(width: 12),
+        _buildFeatureButton(
+          context,
+          emoji: '🎲',
+          label: 'Minijuegos',
+          theme: theme,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CoupleGamesHubScreen()),
+            );
+          },
+        ),
+        const SizedBox(width: 12),
+        _buildFeatureButton(
+          context,
+          emoji: '📅',
+          label: 'Calendario',
+          theme: theme,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CoupleCalendarScreen()),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureButton(
+    BuildContext context, {
+    required String emoji,
+    required String label,
+    required ThemeProvider theme,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: theme.softAccentColor, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: theme.primaryColor.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 24)),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: theme.secondaryColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
