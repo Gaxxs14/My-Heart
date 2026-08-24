@@ -707,6 +707,7 @@ class CoupleProvider extends ChangeNotifier {
     String? description,
     required String memoryDate,
     String? locationName,
+    List<String>? photoUrls,
   }) async {
     if (_coupleData?['id'] == 'demo-couple-1') {
       _memories.insert(0, {
@@ -715,6 +716,7 @@ class CoupleProvider extends ChangeNotifier {
         'description': description ?? '',
         'memory_date': memoryDate,
         'location_name': locationName,
+        'photo_urls': photoUrls ?? [],
         'author_name': 'Tú',
       });
       _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 20;
@@ -728,6 +730,7 @@ class CoupleProvider extends ChangeNotifier {
         'description': description,
         'memory_date': memoryDate,
         'location_name': locationName,
+        'photo_urls': photoUrls ?? [],
       });
       await loadMemories();
       await fetchCoupleStatus();
@@ -785,11 +788,12 @@ class CoupleProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleBucketItem(String itemId, bool isCompleted) async {
+  Future<void> toggleBucketItem(String itemId, bool isCompleted, {String? proofPhotoUrl}) async {
     if (_coupleData?['id'] == 'demo-couple-1') {
       final index = _bucketList.indexWhere((item) => item['id'] == itemId);
       if (index != -1) {
         _bucketList[index]['is_completed'] = isCompleted;
+        if (proofPhotoUrl != null) _bucketList[index]['proof_photo_url'] = proofPhotoUrl;
         if (isCompleted) {
           _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 50;
         }
@@ -801,6 +805,7 @@ class CoupleProvider extends ChangeNotifier {
     try {
       await _apiService.patch('/bucket/$itemId', {
         'is_completed': isCompleted,
+        if (proofPhotoUrl != null) 'proof_photo_url': proofPhotoUrl,
       });
       await loadBucketList();
       await fetchCoupleStatus();

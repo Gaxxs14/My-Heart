@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/providers/couple_provider.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_provider.dart';
 
 class TimelineScreen extends StatefulWidget {
@@ -28,6 +30,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final locationController = TextEditingController();
     DateTime memoryDate = DateTime.now();
     File? selectedImage;
+    bool isSaving = false;
 
     showModalBottomSheet(
       context: context,
@@ -53,7 +56,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   children: [
                     const Text(
                       'Guardar un Recuerdo con Foto 📸',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF880E4F)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.deepWine),
                     ),
                     const SizedBox(height: 16),
 
@@ -61,7 +64,12 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     GestureDetector(
                       onTap: () async {
                         final picker = ImagePicker();
-                        final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1080);
+                        final picked = await picker.pickImage(
+                          source: ImageSource.gallery,
+                          maxWidth: 800,
+                          maxHeight: 800,
+                          imageQuality: 75,
+                        );
                         if (picked != null) {
                           setModalState(() {
                             selectedImage = File(picked.path);
@@ -69,7 +77,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         }
                       },
                       child: Container(
-                        height: 140,
+                        height: 150,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF0F3),
@@ -86,11 +94,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                             ? Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: const [
-                                  Icon(Icons.add_a_photo_rounded, size: 36, color: Color(0xFFFF5E7E)),
+                                  Icon(Icons.add_a_photo_rounded, size: 36, color: AppTheme.primaryRose),
                                   SizedBox(height: 6),
                                   Text(
                                     'Toca para subir una foto de su momento 💕',
-                                    style: TextStyle(fontSize: 13, color: Color(0xFFFF5E7E), fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontSize: 13, color: AppTheme.primaryRose, fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               )
@@ -120,7 +128,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       controller: locationController,
                       decoration: const InputDecoration(
                         labelText: 'Lugar (ej. Cancún, Nuestro café favorito)',
-                        prefixIcon: Icon(Icons.place_rounded, color: Color(0xFFFF5E7E)),
+                        prefixIcon: Icon(Icons.place_rounded, color: AppTheme.primaryRose),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -131,7 +139,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         final picked = await showDatePicker(
                           context: context,
                           initialDate: memoryDate,
-                          firstDate: DateTime(2010),
+                          firstDate: DateTime(2000),
                           lastDate: DateTime.now(),
                         );
                         if (picked != null) {
@@ -148,7 +156,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.calendar_today_rounded, color: Color(0xFFFF5E7E)),
+                            const Icon(Icons.calendar_today_rounded, color: AppTheme.primaryRose),
                             const SizedBox(width: 10),
                             Text('Fecha: ${DateFormat('dd MMM yyyy').format(memoryDate)}'),
                           ],
@@ -161,25 +169,50 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () async {
-                          if (titleController.text.trim().isEmpty) return;
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryRose,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                if (titleController.text.trim().isEmpty) return;
 
-                          final couple = Provider.of<CoupleProvider>(context, listen: false);
-                          await couple.addMemory(
-                            title: titleController.text.trim(),
-                            description: descController.text.trim(),
-                            memoryDate: memoryDate.toIso8601String().split('T').first,
-                            locationName: locationController.text.trim(),
-                          );
+                                setModalState(() => isSaving = true);
 
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('¡Recuerdo y foto guardados para siempre! 💖 (+20 XP)')),
-                            );
-                          }
-                        },
-                        child: const Text('Guardar en la Bóveda (+20 XP)'),
+                                List<String> photoUrls = [];
+                                if (selectedImage != null) {
+                                  final bytes = await selectedImage!.readAsBytes();
+                                  photoUrls.add('data:image/jpeg;base64,${base64Encode(bytes)}');
+                                }
+
+                                final couple = Provider.of<CoupleProvider>(context, listen: false);
+                                await couple.addMemory(
+                                  title: titleController.text.trim(),
+                                  description: descController.text.trim(),
+                                  memoryDate: memoryDate.toIso8601String().split('T').first,
+                                  locationName: locationController.text.trim(),
+                                  photoUrls: photoUrls,
+                                );
+
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('¡Recuerdo y foto guardados para siempre! 💖 (+20 XP)'),
+                                      backgroundColor: AppTheme.primaryRose,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              },
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                              )
+                            : const Text('Guardar en la Bóveda (+20 XP)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -199,52 +232,58 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final memories = couple.memories;
 
     return Scaffold(
+      backgroundColor: AppTheme.softBackground,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: Text(
+        title: const Text(
           'Bóveda de Recuerdos 📸',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: theme.secondaryColor,
-                fontWeight: FontWeight.bold,
-              ),
+          style: TextStyle(
+            color: AppTheme.deepWine,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: theme.primaryColor,
+        backgroundColor: AppTheme.primaryRose,
         onPressed: () => _showAddMemoryDialog(context),
         icon: const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
         label: const Text('Nuevo Recuerdo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [theme.softAccentColor.withOpacity(0.5), Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+      body: SafeArea(
         child: couple.isLoadingMemories
-            ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
+            ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryRose))
             : memories.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Text('📸', style: TextStyle(fontSize: 60)),
-                        SizedBox(height: 16),
-                        Text(
-                          'Aún no hay recuerdos guardados',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF880E4F)),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Toca el botón para subir su primera foto y momento especial.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: const BoxDecoration(
+                              color: AppTheme.softPink,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.photo_library_outlined, size: 54, color: AppTheme.primaryRose),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Su Álbum de Recuerdos está vacío ✨',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.deepWine),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Toca el botón "+ Nuevo Recuerdo" para subir su primera foto y guardar este momento especial.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : ListView.builder(
@@ -259,29 +298,69 @@ class _TimelineScreenState extends State<TimelineScreen> {
     );
   }
 
+  Widget? _buildMemoryImage(dynamic photoUrls) {
+    String? url;
+    if (photoUrls is List && photoUrls.isNotEmpty) {
+      url = photoUrls.first?.toString();
+    } else if (photoUrls is String && photoUrls.isNotEmpty) {
+      if (photoUrls.startsWith('[')) {
+        try {
+          final list = jsonDecode(photoUrls) as List;
+          if (list.isNotEmpty) url = list.first?.toString();
+        } catch (_) {}
+      } else {
+        url = photoUrls;
+      }
+    }
+
+    if (url == null || url.isEmpty) return null;
+
+    ImageProvider? provider;
+    if (url.startsWith('data:image')) {
+      try {
+        final b64 = url.split(',').last;
+        provider = MemoryImage(base64Decode(b64));
+      } catch (_) {}
+    } else if (url.startsWith('http')) {
+      provider = NetworkImage(url);
+    } else if (url.startsWith('/')) {
+      provider = FileImage(File(url));
+    }
+
+    if (provider == null) return null;
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: Image(
+        image: provider,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      ),
+    );
+  }
+
   Widget _buildMemoryCard(dynamic item, ThemeProvider theme) {
     final dateStr = item['memory_date'] ?? '';
     final formattedDate = dateStr.isNotEmpty
         ? DateFormat('dd MMMM yyyy').format(DateTime.tryParse(dateStr) ?? DateTime.now())
         : '';
 
+    final imageWidget = _buildMemoryImage(item['photo_urls']);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.softAccentColor, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: theme.primaryColor.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFFFFE3E8), width: 1.2),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (imageWidget != null) imageWidget,
           Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -292,8 +371,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   children: [
                     Text(
                       formattedDate,
-                      style: TextStyle(
-                        color: theme.primaryColor,
+                      style: const TextStyle(
+                        color: AppTheme.primaryRose,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                         letterSpacing: 0.5,
@@ -302,11 +381,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     if (item['location_name'] != null && item['location_name'].toString().isNotEmpty)
                       Row(
                         children: [
-                          const Icon(Icons.place_rounded, size: 14, color: Colors.grey),
+                          const Icon(Icons.place_rounded, size: 14, color: AppTheme.textMuted),
                           const SizedBox(width: 4),
                           Text(
                             item['location_name'],
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                           ),
                         ],
                       ),
@@ -315,27 +394,27 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 const SizedBox(height: 8),
                 Text(
                   item['title'] ?? '',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: theme.secondaryColor,
+                    color: AppTheme.deepWine,
                   ),
                 ),
                 if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
                     item['description'],
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF2B2B2B), height: 1.3),
+                    style: const TextStyle(fontSize: 14, color: AppTheme.textDark, height: 1.3),
                   ),
                 ],
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.person_pin_rounded, size: 14, color: Colors.grey),
-                    const SizedBox(width: 4),
+                    const Icon(Icons.favorite, size: 14, color: AppTheme.primaryRose),
+                    const SizedBox(width: 6),
                     Text(
                       'Guardado por: ${item['author_name'] ?? 'Tú'} 💕',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
+                      style: const TextStyle(fontSize: 11, color: AppTheme.textMuted, fontStyle: FontStyle.italic),
                     ),
                   ],
                 ),

@@ -1,8 +1,12 @@
 import 'dart:math';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_provider.dart';
 
 class BucketListScreen extends StatefulWidget {
@@ -268,10 +272,24 @@ class _BucketListScreenState extends State<BucketListScreen> {
                       final item = items[index];
                       final isCompleted = item['is_completed'] ?? false;
                       final creatorName = item['creator_name'] ?? item['author_name'] ?? 'Tú';
+                      final proofPhoto = item['proof_photo_url']?.toString();
+
+                      ImageProvider? proofImgProvider;
+                      if (proofPhoto != null && proofPhoto.isNotEmpty) {
+                        if (proofPhoto.startsWith('data:image')) {
+                          try {
+                            final b64 = proofPhoto.split(',').last;
+                            proofImgProvider = MemoryImage(base64Decode(b64));
+                          } catch (_) {}
+                        } else if (proofPhoto.startsWith('http')) {
+                          proofImgProvider = NetworkImage(proofPhoto);
+                        } else if (proofPhoto.startsWith('/')) {
+                          proofImgProvider = FileImage(File(proofPhoto));
+                        }
+                      }
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: isCompleted ? const Color(0xFFF1F8E9) : Colors.white,
                           borderRadius: BorderRadius.circular(20),
@@ -287,66 +305,102 @@ class _BucketListScreenState extends State<BucketListScreen> {
                             ),
                           ],
                         ),
-                        child: Row(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Checkbox(
-                              value: isCompleted,
-                              activeColor: Colors.green,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                              onChanged: (val) {
-                                couple.toggleBucketItem(item['id'], val ?? false);
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
+                            if (proofImgProvider != null)
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                child: Image(
+                                  image: proofImgProvider,
+                                  height: 160,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    item['title'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      decoration: isCompleted ? TextDecoration.lineThrough : null,
-                                      color: isCompleted ? Colors.grey : const Color(0xFF2B2B2B),
+                                  Checkbox(
+                                    value: isCompleted,
+                                    activeColor: Colors.green,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                    onChanged: (val) async {
+                                      final check = val ?? false;
+                                      if (check) {
+                                        // Ask if they want to attach a photo
+                                        final picker = ImagePicker();
+                                        final picked = await picker.pickImage(
+                                          source: ImageSource.gallery,
+                                          maxWidth: 800,
+                                          maxHeight: 800,
+                                          imageQuality: 75,
+                                        );
+                                        String? base64Photo;
+                                        if (picked != null) {
+                                          final bytes = await picked.readAsBytes();
+                                          base64Photo = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+                                        }
+                                        couple.toggleBucketItem(item['id'], true, proofPhotoUrl: base64Photo);
+                                      } else {
+                                        couple.toggleBucketItem(item['id'], false);
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item['title'] ?? '',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                            color: isCompleted ? Colors.grey : const Color(0xFF2B2B2B),
+                                          ),
+                                        ),
+                                        if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item['description'],
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: isCompleted ? Colors.grey.shade400 : Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                        const SizedBox(height: 6),
+                                        // Creator badge
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: isCompleted ? Colors.green.shade50 : theme.softAccentColor,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '💡 Idea de: $creatorName 💕',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: isCompleted ? Colors.green.shade800 : theme.primaryColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      item['description'],
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isCompleted ? Colors.grey.shade400 : Colors.grey.shade600,
-                                      ),
+                                  if (isCompleted)
+                                    const Padding(
+                                      padding: EdgeInsets.only(left: 4, top: 4),
+                                      child: Text('🎉 +50 XP', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold)),
                                     ),
-                                  ],
-                                  const SizedBox(height: 6),
-                                  // Creator badge
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: isCompleted ? Colors.green.shade50 : theme.softAccentColor,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '💡 Idea de: $creatorName 💕',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: isCompleted ? Colors.green.shade800 : theme.primaryColor,
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
-                            if (isCompleted)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 4, top: 4),
-                                child: Text('🎉 +50 XP', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold)),
-                              ),
                           ],
                         ),
                       );
