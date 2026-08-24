@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -13,31 +15,34 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
+  late AnimationController _bgController;
 
-  // Quick Start Controllers
-  final _quickNameController = TextEditingController();
-  final _quickNicknameController = TextEditingController();
-
-  // Quick Link Controllers
-  final _linkNameController = TextEditingController();
-  final _linkNicknameController = TextEditingController();
-  final _linkCodeController = TextEditingController();
-
-  // Classic Login Controllers
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  // Controllers
+  final _quickNameController       = TextEditingController();
+  final _quickNicknameController   = TextEditingController();
+  final _linkNameController        = TextEditingController();
+  final _linkNicknameController    = TextEditingController();
+  final _linkCodeController        = TextEditingController();
+  final _emailController           = TextEditingController();
+  final _passwordController        = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _bgController  = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _bgController.dispose();
     _quickNameController.dispose();
     _quickNicknameController.dispose();
     _linkNameController.dispose();
@@ -48,418 +53,530 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
-  void _submitQuickStart() async {
+  // ─── Actions ──────────────────────────────────────────────────────────────
+
+  Future<void> _submitQuickStart() async {
     final name = _quickNameController.text.trim();
-    if (name.isEmpty) {
-      _showError('Por favor ingresa tu nombre');
-      return;
-    }
-
+    if (name.isEmpty) { _showError('Por favor ingresa tu nombre'); return; }
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final success = await auth.quickStart(
-      name: name,
-      nickname: _quickNicknameController.text.trim(),
-    );
-
-    if (!success && mounted && auth.errorMessage != null) {
-      _showError(auth.errorMessage!);
-    }
+    final ok   = await auth.quickStart(name: name, nickname: _quickNicknameController.text.trim());
+    if (!ok && mounted && auth.errorMessage != null) _showError(auth.errorMessage!);
   }
 
-  void _submitQuickLink() async {
+  Future<void> _submitQuickLink() async {
     final name = _linkNameController.text.trim();
     final code = _linkCodeController.text.trim();
-
-    if (name.isEmpty) {
-      _showError('Por favor ingresa tu nombre');
-      return;
-    }
-    if (code.isEmpty) {
-      _showError('Por favor ingresa el código de tu pareja');
-      return;
-    }
-
+    if (name.isEmpty) { _showError('Por favor ingresa tu nombre'); return; }
+    if (code.isEmpty) { _showError('Por favor ingresa el código de tu pareja'); return; }
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final success = await auth.quickLink(
-      name: name,
-      pairingCode: code,
-      nickname: _linkNicknameController.text.trim(),
-    );
-
-    if (!success && mounted && auth.errorMessage != null) {
-      _showError(auth.errorMessage!);
-    }
+    final ok   = await auth.quickLink(name: name, pairingCode: code, nickname: _linkNicknameController.text.trim());
+    if (!ok && mounted && auth.errorMessage != null) _showError(auth.errorMessage!);
   }
 
-  void _submitClassicLogin() async {
-    final email = _emailController.text.trim();
+  Future<void> _submitClassicLogin() async {
+    final email    = _emailController.text.trim();
     final password = _passwordController.text;
-
-    if (email.isEmpty || !email.contains('@')) {
-      _showError('Ingresa un correo electrónico válido');
-      return;
-    }
-    if (password.isEmpty) {
-      _showError('Ingresa tu contraseña');
-      return;
-    }
-
+    if (email.isEmpty || !email.contains('@')) { _showError('Ingresa un correo válido'); return; }
+    if (password.isEmpty) { _showError('Ingresa tu contraseña'); return; }
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final success = await auth.login(
-      email: email,
-      password: password,
-    );
-
-    if (!success && mounted && auth.errorMessage != null) {
-      _showError(auth.errorMessage!);
-    }
+    final ok   = await auth.login(email: email, password: password);
+    if (!ok && mounted && auth.errorMessage != null) _showError(auth.errorMessage!);
   }
 
-  void _showError(String message) {
+  void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.redAccent,
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(msg), backgroundColor: Colors.redAccent),
     );
   }
+
+  // ─── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFFF0F3), Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: EdgeInsets.zero,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 12),
+      body: Stack(
+        children: [
+          // ── Animated Bokeh Background ──────────────────────────────────
+          _BokehBackground(controller: _bgController, size: size),
 
-                        // Glowing Heart
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.softPink,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryRose.withOpacity(0.25),
-                                blurRadius: 20,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.favorite_rounded,
-                            color: AppTheme.primaryRose,
-                            size: 36,
-                          ),
-                        ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                              begin: const Offset(1, 1),
-                              end: const Offset(1.1, 1.1),
-                              duration: 1000.ms,
+          // ── Content ───────────────────────────────────────────────────
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.zero,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 28),
+
+                          // ── Hero Logo ───────────────────────────────
+                          _buildHeroLogo()
+                              .animate()
+                              .fadeIn(duration: 600.ms)
+                              .slideY(begin: -0.2, end: 0, curve: Curves.easeOutCubic),
+
+                          const SizedBox(height: 10),
+
+                          // ── Tag line ─────────────────────────────────
+                          Text(
+                            'Tu espacio romántico privado',
+                            style: TextStyle(
+                              color: AppTheme.deepWine.withOpacity(0.6),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.3,
                             ),
+                          )
+                              .animate(delay: 200.ms)
+                              .fadeIn(duration: 500.ms),
 
-                        const SizedBox(height: 8),
+                          const SizedBox(height: 28),
 
-                        Text(
-                          'My Heart',
-                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                color: AppTheme.deepWine,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 24,
-                              ),
-                        ),
+                          // ── Tab Selector ─────────────────────────────
+                          _buildTabSelector()
+                              .animate(delay: 300.ms)
+                              .fadeIn(duration: 400.ms)
+                              .slideY(begin: 0.1, end: 0),
 
-                        const SizedBox(height: 2),
+                          const SizedBox(height: 12),
 
-                        const Text(
-                          'Elige cómo deseas entrar a tu espacio',
-                          style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Tab Bar
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: AppTheme.softPink.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: TabBar(
+                          // ── Tab Content ──────────────────────────────
+                          SizedBox(
+                            height: 380,
+                            child: TabBarView(
                               controller: _tabController,
-                              indicator: BoxDecoration(
-                                color: AppTheme.primaryRose,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              indicatorSize: TabBarIndicatorSize.tab,
-                              labelColor: Colors.white,
-                              unselectedLabelColor: AppTheme.deepWine,
-                              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                              tabs: const [
-                                Tab(text: '✨ Rápido'),
-                                Tab(text: '🔗 Tengo Código'),
-                                Tab(text: '🔑 Con Correo'),
+                              physics: const BouncingScrollPhysics(),
+                              children: [
+                                _buildQuickStartTab(auth),
+                                _buildQuickLinkTab(auth),
+                                _buildClassicLoginTab(auth),
                               ],
                             ),
                           ),
-                        ),
 
-                        const SizedBox(height: 8),
+                          const Spacer(),
 
-                        // Tab Bar View with fixed min height for clean typing
-                        SizedBox(
-                          height: 380,
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              // Tab 1: Quick Start (No email, no password!)
-                              _buildQuickStartTab(auth),
+                          // ── Demo Button ───────────────────────────────
+                          _buildDemoButton(auth)
+                              .animate(delay: 500.ms)
+                              .fadeIn(duration: 400.ms),
 
-                              // Tab 2: Quick Link (Partner's code)
-                              _buildQuickLinkTab(auth),
-
-                              // Tab 3: Classic Email Login
-                              _buildClassicLoginTab(auth),
-                            ],
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        // Demo Mode Button (Explore without partner)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                          child: TextButton.icon(
-                            onPressed: () {
-                              final couple = Provider.of<CoupleProvider>(context, listen: false);
-                              auth.enterDemoMode(name: 'Gabriel', nickname: 'Mi Amor');
-                              couple.loadDemoData();
-                            },
-                            icon: const Icon(Icons.explore_rounded, color: AppTheme.primaryRose, size: 18),
-                            label: const Text(
-                              '🚀 Explorar todo en Modo Demo (Sin vinculación)',
-                              style: TextStyle(
-                                color: AppTheme.primaryRose,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                      ],
+                          const SizedBox(height: 8),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Hero Logo ────────────────────────────────────────────────────────────
+
+  Widget _buildHeroLogo() {
+    return Column(
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: AppTheme.loveGradient,
+            boxShadow: AppTheme.heroShadow,
+          ),
+          child: const Center(
+            child: Icon(Icons.favorite_rounded, color: Colors.white, size: 40),
+          ),
+        )
+            .animate(onPlay: (c) => c.repeat(reverse: true))
+            .scale(begin: const Offset(1, 1), end: const Offset(1.06, 1.06), duration: 1800.ms, curve: Curves.easeInOut),
+        const SizedBox(height: 14),
+        ShaderMask(
+          shaderCallback: (bounds) => AppTheme.loveGradient.createShader(bounds),
+          child: const Text(
+            'My Heart',
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              fontFamily: 'Playfair Display',
+              letterSpacing: -0.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Tab Selector ─────────────────────────────────────────────────────────
+
+  Widget _buildTabSelector() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.75),
+              borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+              border: Border.all(
+                color: AppTheme.primaryRose.withOpacity(0.18),
+                width: 1.2,
+              ),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                gradient: AppTheme.loveGradient,
+                borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryRose.withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: Colors.white,
+              unselectedLabelColor: AppTheme.textMuted,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+              tabs: const [
+                Tab(text: '✨ Rápido'),
+                Tab(text: '🔗 Código'),
+                Tab(text: '🔑 Correo'),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  // ─── Form Card wrapper ────────────────────────────────────────────────────
+
+  Widget _formCard(Widget child) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.82),
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.6),
+                width: 1.2,
+              ),
+              boxShadow: AppTheme.cardShadow,
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Tab 1: Quick Start ───────────────────────────────────────────────────
 
   Widget _buildQuickStartTab(AuthProvider auth) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(22.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Entrar sin contraseña 🚀',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.deepWine),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Solo ingresa tu nombre y te daremos un código para invitar a tu pareja.',
-                style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _quickNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Tu Nombre',
-                  hintText: 'Ej. Gabriel, Sofia',
-                  prefixIcon: Icon(Icons.person_outline_rounded, color: AppTheme.primaryRose),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _quickNicknameController,
-                decoration: const InputDecoration(
-                  labelText: 'Apodo cariñoso (opcional)',
-                  hintText: 'Ej. Mi Amor, Bebé',
-                  prefixIcon: Icon(Icons.favorite_border_rounded, color: AppTheme.primaryRose),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: auth.isLoading ? null : _submitQuickStart,
-                  child: auth.isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Empezar Ahora ✨',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                ),
-              ),
-            ],
-          ),
+      child: _formCard(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _tabHeader('Entrar sin contraseña', '🚀',
+                'Ingresa tu nombre y te daremos un código para invitar a tu pareja.'),
+            const SizedBox(height: 18),
+            _fancyField(_quickNameController, 'Tu Nombre', 'Gabriel, Sofía', Icons.person_outline_rounded),
+            const SizedBox(height: 12),
+            _fancyField(_quickNicknameController, 'Apodo cariñoso (opcional)', 'Mi Amor, Bebé', Icons.favorite_border_rounded),
+            const SizedBox(height: 22),
+            _gradientButton(
+              label: 'Empezar Ahora ✨',
+              isLoading: auth.isLoading,
+              onPressed: _submitQuickStart,
+            ),
+          ],
         ),
       ),
     );
   }
+
+  // ─── Tab 2: Quick Link ────────────────────────────────────────────────────
 
   Widget _buildQuickLinkTab(AuthProvider auth) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(22.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Vincularme con mi Pareja 💖',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.deepWine),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Ingresa el código que te envió tu pareja (ej. HEART-4892) para conectarse de inmediato.',
-                style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _linkCodeController,
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: 'Código de tu Pareja',
-                  hintText: 'Ej. HEART-1234',
-                  prefixIcon: Icon(Icons.qr_code_rounded, color: AppTheme.primaryRose),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _linkNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Tu Nombre',
-                  prefixIcon: Icon(Icons.person_outline_rounded, color: AppTheme.primaryRose),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _linkNicknameController,
-                decoration: const InputDecoration(
-                  labelText: 'Apodo cariñoso (opcional)',
-                  prefixIcon: Icon(Icons.favorite_border_rounded, color: AppTheme.primaryRose),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: auth.isLoading ? null : _submitQuickLink,
-                  child: auth.isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Conectarme con mi Amor 💕',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                ),
-              ),
-            ],
-          ),
+      child: _formCard(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _tabHeader('Vincularme con mi Pareja', '💖',
+                'Ingresa el código que te envió tu pareja (ej. HEART-4892).'),
+            const SizedBox(height: 18),
+            _fancyField(_linkCodeController, 'Código de tu Pareja', 'HEART-1234', Icons.qr_code_rounded,
+                caps: TextCapitalization.characters),
+            const SizedBox(height: 12),
+            _fancyField(_linkNameController, 'Tu Nombre', 'Gabriel, Sofía', Icons.person_outline_rounded),
+            const SizedBox(height: 12),
+            _fancyField(_linkNicknameController, 'Apodo cariñoso (opcional)', 'Mi Amor', Icons.favorite_border_rounded),
+            const SizedBox(height: 22),
+            _gradientButton(
+              label: 'Conectarme con mi Amor 💕',
+              isLoading: auth.isLoading,
+              onPressed: _submitQuickLink,
+            ),
+          ],
         ),
       ),
     );
   }
 
+  // ─── Tab 3: Classic Login ─────────────────────────────────────────────────
+
   Widget _buildClassicLoginTab(AuthProvider auth) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(22.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Cuenta con Correo 🔑',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.deepWine),
-              ),
-              const SizedBox(height: 18),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Correo electrónico',
-                  prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryRose),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: Icon(Icons.lock_outline_rounded, color: AppTheme.primaryRose),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: auth.isLoading ? null : _submitClassicLogin,
-                  child: auth.isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Iniciar Sesión',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                    );
-                  },
-                  child: const Text(
-                    '¿Crear cuenta con correo? Regístrate',
-                    style: TextStyle(color: AppTheme.primaryRose, fontWeight: FontWeight.bold, fontSize: 13),
+      child: _formCard(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _tabHeader('Cuenta con Correo', '🔑', ''),
+            const SizedBox(height: 18),
+            _fancyField(_emailController, 'Correo electrónico', 'tu@email.com', Icons.email_outlined,
+                type: TextInputType.emailAddress),
+            const SizedBox(height: 12),
+            _fancyField(_passwordController, 'Contraseña', '••••••••', Icons.lock_outline_rounded,
+                obscure: true),
+            const SizedBox(height: 22),
+            _gradientButton(
+              label: 'Iniciar Sesión',
+              isLoading: auth.isLoading,
+              onPressed: _submitClassicLogin,
+            ),
+            const SizedBox(height: 14),
+            Center(
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                child: Text(
+                  '¿No tienes cuenta? Regístrate →',
+                  style: TextStyle(
+                    color: AppTheme.primaryRose,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
                 ),
               ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Demo Button ──────────────────────────────────────────────────────────
+
+  Widget _buildDemoButton(AuthProvider auth) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppTheme.deepWine,
+          side: BorderSide(color: AppTheme.primaryRose.withOpacity(0.4), width: 1.2),
+          backgroundColor: Colors.white.withOpacity(0.6),
+          minimumSize: const Size(double.infinity, 48),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
+        ),
+        onPressed: () {
+          final couple = Provider.of<CoupleProvider>(context, listen: false);
+          auth.enterDemoMode(name: 'Gabriel', nickname: 'Mi Amor');
+          couple.loadDemoData();
+        },
+        icon: const Icon(Icons.explore_outlined, size: 18),
+        label: const Text(
+          'Explorar en Modo Demo (sin vinculación)',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+      )
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .shimmer(duration: 2500.ms, color: AppTheme.primaryRose.withOpacity(0.06)),
+    );
+  }
+
+  // ─── Shared helpers ───────────────────────────────────────────────────────
+
+  Widget _tabHeader(String title, String emoji, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.deepWine,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (subtitle.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted, height: 1.4)),
+        ],
+      ],
+    );
+  }
+
+  Widget _fancyField(
+    TextEditingController controller,
+    String label,
+    String hint,
+    IconData icon, {
+    bool obscure = false,
+    TextInputType type = TextInputType.text,
+    TextCapitalization caps = TextCapitalization.words,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      keyboardType: type,
+      textCapitalization: caps,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon, color: AppTheme.primaryRose, size: 20),
+      ),
+    );
+  }
+
+  Widget _gradientButton({
+    required String label,
+    required bool isLoading,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 52,
+      decoration: BoxDecoration(
+        gradient: AppTheme.loveGradient,
+        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+        boxShadow: AppTheme.heroShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isLoading ? null : onPressed,
+          borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+          splashColor: Colors.white24,
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                  )
+                : Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Bokeh Background ─────────────────────────────────────────────────────────
+
+class _BokehBackground extends StatelessWidget {
+  const _BokehBackground({required this.controller, required this.size});
+  final AnimationController controller;
+  final Size size;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (_, __) {
+        final t = controller.value;
+        return Stack(
+          children: [
+            // Base gradient
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFFFF0F5),
+                    const Color(0xFFFFF8FA),
+                    const Color(0xFFFFF0F5).withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+            // Blobs
+            _blob(size, t, 0.15, 0.08, 160, const Color(0xFFFF9AB2), 0.18),
+            _blob(size, t, 0.80, 0.20, 120, const Color(0xFFFFB347), 0.12),
+            _blob(size, t, 0.05, 0.65, 100, const Color(0xFFB5A8FF), 0.10),
+            _blob(size, t, 0.85, 0.75, 140, const Color(0xFFFF9AB2), 0.14),
+            _blob(size, t, 0.45, 0.40, 80,  const Color(0xFFFF4D79), 0.08),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _blob(Size size, double t, double xBase, double yBase, double radius, Color color, double opacity) {
+    final dx = math.sin(t * math.pi * 2 + xBase * 10) * 30;
+    final dy = math.cos(t * math.pi * 2 + yBase * 10) * 20;
+    return Positioned(
+      left: size.width  * xBase + dx - radius,
+      top:  size.height * yBase + dy - radius,
+      child: Container(
+        width:  radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color.withOpacity(opacity),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+          child: Container(color: Colors.transparent),
         ),
       ),
     );

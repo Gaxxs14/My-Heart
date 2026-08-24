@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../widgets_studio/screens/widgets_studio_screen.dart';
 import '../../pet/screens/pet_sanctuary_screen.dart';
@@ -18,230 +20,202 @@ import '../../sticky_notes/widgets/sticky_notes_board.dart';
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
 
+  // ─── Mood Picker ──────────────────────────────────────────────────────────
+
   void _showMoodPicker(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth  = Provider.of<AuthProvider>(context, listen: false);
     final theme = Provider.of<ThemeProvider>(context, listen: false);
 
     final moods = [
-      {'status': 'Enamorado/a 🥰', 'icon': '🥰'},
-      {'status': 'Pensando en ti 💭', 'icon': '💭'},
-      {'status': 'Te extraño mucho 🥺', 'icon': '🥺'},
-      {'status': 'Trabajando 💻', 'icon': '💻'},
-      {'status': 'Con hambre 🍕', 'icon': '🍕'},
+      {'status': 'Enamorado/a 🥰',         'icon': '🥰'},
+      {'status': 'Pensando en ti 💭',       'icon': '💭'},
+      {'status': 'Te extraño mucho 🥺',    'icon': '🥺'},
+      {'status': 'Trabajando 💻',           'icon': '💻'},
+      {'status': 'Con hambre 🍕',           'icon': '🍕'},
       {'status': 'Cansado/a pero feliz 😴', 'icon': '😴'},
-      {'status': 'Listo/a para una cita 🍷', 'icon': '🍷'},
-      {'status': 'Abrazable 🤗', 'icon': '🤗'},
+      {'status': 'Listo/a para una cita 🍷','icon': '🍷'},
+      {'status': 'Abrazable 🤗',            'icon': '🤗'},
     ];
 
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
       backgroundColor: Colors.white,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '¿Cómo te sientes ahora?',
-                    style: TextStyle(
-                      color: theme.secondaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(color: AppTheme.blushPink, borderRadius: BorderRadius.circular(2)),
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: moods.map((m) {
-                  return ActionChip(
-                    avatar: Text(m['icon']!, style: const TextStyle(fontSize: 18)),
-                    label: Text(m['status']!),
-                    backgroundColor: theme.softAccentColor.withOpacity(0.5),
-                    labelStyle: TextStyle(
-                      color: theme.secondaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: theme.softAccentColor),
-                    ),
-                    onPressed: () {
-                      auth.updateMood(m['status']!, m['icon']!);
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Estado actualizado a: ${m['status']}'),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
+            ),
+            const SizedBox(height: 16),
+            Text('¿Cómo te sientes ahora? 💫',
+                style: TextStyle(color: theme.secondaryColor, fontWeight: FontWeight.w700, fontSize: 17)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8, runSpacing: 8,
+              children: moods.map((m) => ActionChip(
+                avatar: Text(m['icon']!, style: const TextStyle(fontSize: 16)),
+                label: Text(m['status']!),
+                backgroundColor: theme.softAccentColor.withOpacity(0.4),
+                labelStyle: TextStyle(color: theme.secondaryColor, fontWeight: FontWeight.w600, fontSize: 12),
+                shape: StadiumBorder(side: BorderSide(color: theme.softAccentColor, width: 1)),
+                onPressed: () {
+                  auth.updateMood(m['status']!, m['icon']!);
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Estado: ${m['status']}')),
                   );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
+                },
+              )).toList(),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
+
+  // ─── Settings Modal ───────────────────────────────────────────────────────
 
   void _showSettingsModal(BuildContext context, AuthProvider auth, CoupleProvider couple, ThemeProvider theme) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
       backgroundColor: Colors.white,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Ajustes & Cuenta 💖',
-                    style: TextStyle(
-                      color: theme.secondaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(width: 36, height: 4,
+                decoration: BoxDecoration(color: AppTheme.blushPink, borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Ajustes & Cuenta 💖',
+                    style: TextStyle(color: theme.secondaryColor, fontWeight: FontWeight.w700, fontSize: 18)),
+                IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _settingsUserTile(auth, theme, ctx, context),
+            const Divider(height: 24),
+            _settingsCoupleTile(auth, couple, theme),
+            const SizedBox(height: 20),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange.shade800,
+                    side: BorderSide(color: Colors.orange.shade300),
+                    shape: StadiumBorder(),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundColor: theme.softAccentColor,
-                  child: Icon(Icons.person_rounded, color: theme.primaryColor),
-                ),
-                title: Text(auth.currentUser?['name'] ?? 'Usuario'),
-                subtitle: Text('Apodo: ${auth.currentUser?['nickname'] ?? 'Sin apodo'} • ${auth.isDemoMode ? "Modo Demo" : "Conectado a la Nube"}'),
-                trailing: TextButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_rounded, size: 16),
-                  label: const Text('Editar'),
+                  onPressed: () { Navigator.pop(ctx); auth.logout(); },
+                  icon: const Icon(Icons.logout_rounded, size: 16),
+                  label: const Text('Cerrar Sesión'),
                 ),
               ),
-              const Divider(),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundColor: theme.softAccentColor,
-                  child: Icon(Icons.favorite_rounded, color: theme.primaryColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    shape: StadiumBorder(),
+                    elevation: 0,
+                  ),
+                  onPressed: () { Navigator.pop(ctx); _showDeleteAccountConfirmation(context, auth); },
+                  icon: const Icon(Icons.delete_forever_rounded, color: Colors.white, size: 16),
+                  label: const Text('Eliminar Cuenta', style: TextStyle(fontSize: 12)),
                 ),
-                title: Text('Pareja: ${auth.partnerUser?['name'] ?? "Mi Amor"}'),
-                subtitle: Text('Mascota: ${couple.petName} (Nivel ${couple.petLevel})'),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange.shade800,
-                        side: BorderSide(color: Colors.orange.shade300),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        auth.logout();
-                      },
-                      icon: const Icon(Icons.logout_rounded, size: 18),
-                      label: const Text('Cerrar Sesión'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: () {
-                        _showDeleteAccountConfirmation(context, auth);
-                      },
-                      icon: const Icon(Icons.delete_forever_rounded, color: Colors.white, size: 18),
-                      label: const Text('Eliminar Cuenta', style: TextStyle(fontSize: 12)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _settingsUserTile(AuthProvider auth, ThemeProvider theme, BuildContext sheetCtx, BuildContext navCtx) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        width: 48, height: 48,
+        decoration: BoxDecoration(gradient: theme.mainGradient, shape: BoxShape.circle),
+        child: Center(
+          child: Text(
+            (auth.currentUser?['name'] ?? 'U')[0].toUpperCase(),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
           ),
-        );
-      },
+        ),
+      ),
+      title: Text(auth.currentUser?['name'] ?? 'Usuario', style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: Text('${auth.currentUser?['nickname'] ?? 'Sin apodo'} · ${auth.isDemoMode ? "Demo" : "En línea"}',
+          style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+      trailing: TextButton(
+        onPressed: () {
+          Navigator.pop(sheetCtx);
+          Navigator.of(navCtx).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+        },
+        child: const Text('Editar perfil'),
+      ),
+    );
+  }
+
+  Widget _settingsCoupleTile(AuthProvider auth, CoupleProvider couple, ThemeProvider theme) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        width: 48, height: 48,
+        decoration: BoxDecoration(color: theme.softAccentColor, shape: BoxShape.circle),
+        child: Center(child: Text(
+          (auth.partnerUser?['name'] ?? 'P')[0].toUpperCase(),
+          style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18),
+        )),
+      ),
+      title: Text(auth.partnerUser?['name'] ?? 'Mi Amor', style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: Text('Mascota: ${couple.petName} · Nivel ${couple.petLevel}',
+          style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
     );
   }
 
   void _showDeleteAccountConfirmation(BuildContext context, AuthProvider auth) {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Row(
-            children: const [
-              Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-              SizedBox(width: 8),
-              Text('¿Eliminar Cuenta? 🗑️', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+          SizedBox(width: 8),
+          Text('¿Eliminar Cuenta? 🗑️'),
+        ]),
+        content: const Text(
+            'Esta acción eliminará permanentemente tu usuario, recuerdos, cartas y todos los datos sin dejar registros huérfanos.\n\n¿Estás completamente seguro/a?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final ok = await auth.deleteAccount();
+              if (context.mounted && ok) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Cuenta eliminada con éxito.')));
+              }
+            },
+            child: const Text('Sí, Eliminar Todo', style: TextStyle(color: Colors.white)),
           ),
-          content: const Text(
-            'Esta acción eliminará de forma permanente tu usuario, tus recuerdos, cartas, metas y datos en la base de datos sin dejar ningún registro huérfano.\n\n¿Estás completamente seguro/a?',
-            style: TextStyle(fontSize: 13, color: Color(0xFF424242)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              onPressed: () async {
-                Navigator.pop(context);
-                final success = await auth.deleteAccount();
-                if (context.mounted && success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tu cuenta y todos tus datos fueron eliminados con éxito.')),
-                  );
-                }
-              },
-              child: const Text('Sí, Eliminar Todo', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -253,143 +227,94 @@ class HomeDashboardScreen extends StatelessWidget {
       lastDate: DateTime.now(),
       helpText: '¿CUÁNDO COMENZÓ SU HISTORIA?',
     );
-
-    if (picked != null && couple.coupleData != null) {
+    if (picked != null && couple.coupleData != null && context.mounted) {
       couple.coupleData!['anniversary_date'] = picked.toIso8601String().split('T').first;
       couple.coupleData!['relationship_time_start'] = picked.toIso8601String();
       couple.notifyListeners();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('¡Fecha de aniversario actualizada al ${DateFormat('dd MMM yyyy').format(picked)}! 💖')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Aniversario: ${DateFormat('dd MMM yyyy').format(picked)} 💖')),
+      );
     }
   }
 
+  // ─── Build ────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
+    final auth   = Provider.of<AuthProvider>(context);
     final couple = Provider.of<CoupleProvider>(context);
-    final theme = Provider.of<ThemeProvider>(context);
-
-    final currentUser = auth.currentUser;
-    final partnerUser = auth.partnerUser;
+    final theme  = Provider.of<ThemeProvider>(context);
 
     return Stack(
       children: [
         Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Row(
-              children: [
-                Icon(Icons.favorite, color: theme.primaryColor, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'My Heart',
-                  style: TextStyle(
-                    color: theme.secondaryColor,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                    fontSize: 22,
+          backgroundColor: AppTheme.softBackground,
+          extendBodyBehindAppBar: true,
+          appBar: _buildBlurAppBar(context, auth, couple, theme),
+          body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Demo Banner
+                      if (auth.isDemoMode) _buildDemoBanner(context, auth, couple, theme),
+
+                      // 1. Dual Avatars Hero
+                      _buildDualAvatarsSection(context, auth.currentUser, auth.partnerUser, theme)
+                          .animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0),
+
+                      const SizedBox(height: 16),
+
+                      // 2. Love Counter (Hero card)
+                      _buildLoveCounterCard(context, couple, theme)
+                          .animate(delay: 80.ms).fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0),
+
+                      const SizedBox(height: 16),
+
+                      // 3. Quick Feature Grid
+                      _buildFeatureGrid(context, theme)
+                          .animate(delay: 160.ms).fadeIn(duration: 400.ms),
+
+                      const SizedBox(height: 16),
+
+                      // 4. Music Player
+                      const CoupleMusicPlayer()
+                          .animate(delay: 200.ms).fadeIn(duration: 400.ms),
+
+                      const SizedBox(height: 16),
+
+                      // 5. Heartbeat + Pet
+                      _buildHeartbeatAndPetSection(context, auth, couple, theme)
+                          .animate(delay: 240.ms).fadeIn(duration: 400.ms),
+
+                      const SizedBox(height: 16),
+
+                      // 6. Sticky Notes
+                      const StickyNotesBoard()
+                          .animate(delay: 280.ms).fadeIn(duration: 400.ms),
+
+                      const SizedBox(height: 16),
+
+                      // 7. Daily Spark Banner
+                      _buildDailySparkBanner(context, couple, theme)
+                          .animate(delay: 320.ms).fadeIn(duration: 400.ms),
+
+                      const SizedBox(height: 16),
+
+                      // 8. Widgets Studio
+                      _buildWidgetsStudioBanner(context, theme)
+                          .animate(delay: 360.ms).fadeIn(duration: 400.ms),
+                    ],
                   ),
                 ),
-              ],
-            ),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.palette_outlined, color: theme.secondaryColor),
-                tooltip: 'Personalizar Colores',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.settings_outlined, color: theme.secondaryColor),
-                tooltip: 'Ajustes',
-                onPressed: () => _showSettingsModal(context, auth, couple, theme),
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (auth.isDemoMode)
-                  GestureDetector(
-                    onTap: () => _showSettingsModal(context, auth, couple, theme),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3E0),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.orange.shade300),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.info_outline_rounded, color: Colors.orange, size: 20),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Estás en Modo Demo. Toca aquí para ver ajustes o vincularte con tu pareja real.',
-                              style: TextStyle(fontSize: 12, color: Colors.brown, fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                          Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.orange),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                // 1. Dual Avatars with mood
-                _buildDualAvatarsSection(context, currentUser, partnerUser, theme),
-
-                const SizedBox(height: 16),
-
-                // 2. Our Love Song (Music Player)
-                const CoupleMusicPlayer(),
-
-                const SizedBox(height: 16),
-
-                // 3. Love Counter Card (Days, Hours, Minutes, Seconds)
-                _buildLoveCounterCard(context, couple, theme),
-
-                const SizedBox(height: 16),
-
-                // 4. Quick Features Bar: Lugares 🗺️, Minijuegos 🎲, Calendario 📅
-                _buildQuickFeaturesBar(context, theme),
-
-                const SizedBox(height: 16),
-
-                // 5. Heartbeat Button & Pet Card
-                _buildHeartbeatAndPetSection(context, auth, couple, theme),
-
-                const SizedBox(height: 16),
-
-                // 6. Sticky Notes Board (Post-its)
-                const StickyNotesBoard(),
-
-                const SizedBox(height: 16),
-
-                // 7. Daily Spark Banner
-                _buildDailySparkBanner(context, couple, theme),
-
-                const SizedBox(height: 16),
-
-                // 8. Widgets Studio Shortcut
-                _buildWidgetsStudioBanner(context, theme),
-
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
         ),
-
-        // Fullscreen Heartbeat Celebration Animation
         if (couple.showHeartbeatAnimation)
           HeartAnimationOverlay(
             senderName: couple.lastHeartbeatSender ?? 'Tu pareja',
@@ -399,6 +324,97 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
+  // ─── Blur AppBar ──────────────────────────────────────────────────────────
+
+  PreferredSizeWidget _buildBlurAppBar(BuildContext context, AuthProvider auth, CoupleProvider couple, ThemeProvider theme) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(64),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: AppBar(
+            backgroundColor: Colors.white.withOpacity(0.80),
+            elevation: 0,
+            title: Row(
+              children: [
+                ShaderMask(
+                  shaderCallback: (b) => AppTheme.loveGradient.createShader(b),
+                  child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 8),
+                ShaderMask(
+                  shaderCallback: (b) => AppTheme.loveGradient.createShader(b),
+                  child: Text(
+                    'My Heart',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                      letterSpacing: -0.3,
+                      fontFamily: 'Playfair Display',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.palette_outlined, color: theme.primaryColor),
+                tooltip: 'Personalizar',
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
+              ),
+              IconButton(
+                icon: Icon(Icons.more_vert_rounded, color: theme.secondaryColor),
+                tooltip: 'Ajustes',
+                onPressed: () => _showSettingsModal(context, auth, couple, theme),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Demo Banner ──────────────────────────────────────────────────────────
+
+  Widget _buildDemoBanner(BuildContext context, AuthProvider auth, CoupleProvider couple, ThemeProvider theme) {
+    return GestureDetector(
+      onTap: () => _showSettingsModal(context, auth, couple, theme),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16, top: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.orange.shade50, Colors.amber.shade50],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: Colors.orange.shade100, shape: BoxShape.circle),
+              child: const Icon(Icons.explore_rounded, color: Colors.orange, size: 16),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Modo Demo activo — Toca para ajustes o vincularte.',
+                style: TextStyle(fontSize: 12, color: Colors.brown, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.orange),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Dual Avatars Hero ────────────────────────────────────────────────────
+
   Widget _buildDualAvatarsSection(
     BuildContext context,
     Map<String, dynamic>? user,
@@ -406,26 +422,19 @@ class HomeDashboardScreen extends StatelessWidget {
     ThemeProvider theme,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.softAccentColor, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: theme.primaryColor.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(color: theme.softAccentColor.withOpacity(0.8), width: 1),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // Current User Avatar
           GestureDetector(
             onTap: () => _showMoodPicker(context),
-            child: _buildAvatarCard(
+            child: _buildAvatar(
               name: user?['nickname'] ?? user?['name'] ?? 'Tú',
               mood: user?['mood_status'] ?? 'Enamorado/a 🥰',
               icon: user?['mood_icon'] ?? '🥰',
@@ -433,36 +442,8 @@ class HomeDashboardScreen extends StatelessWidget {
               theme: theme,
             ),
           ),
-
-          // Glowing heart bridge
-          Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: theme.softAccentColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.favorite_rounded,
-                  color: theme.primaryColor,
-                  size: 22,
-                ),
-              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                    begin: const Offset(1, 1),
-                    end: const Offset(1.2, 1.2),
-                    duration: 1000.ms,
-                  ),
-              const SizedBox(height: 4),
-              const Text(
-                'Juntos',
-                style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-
-          // Partner Avatar
-          _buildAvatarCard(
+          _buildHeartBridge(theme),
+          _buildAvatar(
             name: partner?['nickname'] ?? partner?['name'] ?? 'Mi Amor',
             mood: partner?['mood_status'] ?? 'Pensando en ti 💭',
             icon: partner?['mood_icon'] ?? '💭',
@@ -475,7 +456,58 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatarCard({
+  Widget _buildHeartBridge(ThemeProvider theme) {
+    return Column(
+      children: [
+        Container(
+          width: 1,
+          height: 20,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.transparent, theme.primaryColor.withOpacity(0.3)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: theme.mainGradient,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: theme.primaryColor.withOpacity(0.4),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
+        )
+            .animate(onPlay: (c) => c.repeat(reverse: true))
+            .scale(begin: const Offset(1, 1), end: const Offset(1.18, 1.18), duration: 900.ms, curve: Curves.easeInOut),
+        Container(
+          width: 1,
+          height: 20,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [theme.primaryColor.withOpacity(0.3), Colors.transparent],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Juntos ∞',
+          style: TextStyle(fontSize: 10, color: theme.primaryColor, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAvatar({
     required String name,
     required String mood,
     required String icon,
@@ -488,70 +520,94 @@ class HomeDashboardScreen extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
+            // Outer aura ring
             Container(
-              width: 70,
-              height: 70,
+              width: 82,
+              height: 82,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: isMe ? theme.mainGradient : null,
-                color: isMe ? null : theme.secondaryColor,
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.primaryColor.withOpacity(0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                gradient: isMe
+                    ? LinearGradient(colors: [
+                        theme.primaryColor.withOpacity(0.2),
+                        theme.primaryColor.withOpacity(0.05),
+                      ])
+                    : LinearGradient(colors: [
+                        theme.secondaryColor.withOpacity(0.15),
+                        theme.secondaryColor.withOpacity(0.04),
+                      ]),
               ),
+            )
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .scale(begin: const Offset(1, 1), end: const Offset(1.08, 1.08), duration: 2000.ms),
+
+            // Avatar circle
+            Positioned.fill(
               child: Center(
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : '♥',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
+                child: Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: isMe ? theme.mainGradient : LinearGradient(
+                      colors: [theme.secondaryColor, theme.secondaryColor.withOpacity(0.7)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isMe ? theme.primaryColor : theme.secondaryColor).withOpacity(0.28),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '♥',
+                      style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ),
             ),
+
             // Mood badge
             Positioned(
-              bottom: -4,
-              right: -4,
+              bottom: 0,
+              right: 0,
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)],
                   border: Border.all(color: theme.softAccentColor, width: 1.5),
                 ),
-                child: Text(icon, style: const TextStyle(fontSize: 14)),
+                child: Text(icon, style: const TextStyle(fontSize: 13)),
               ),
             ),
+
+            // Online dot
             if (!isMe && isOnline)
               Positioned(
-                top: 0,
-                right: 0,
+                top: 4,
+                right: 4,
                 child: Container(
-                  width: 14,
-                  height: 14,
+                  width: 13,
+                  height: 13,
                   decoration: BoxDecoration(
-                    color: Colors.greenAccent.shade700,
+                    color: const Color(0xFF00D97E),
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
-                ),
+                )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scale(begin: const Offset(1, 1), end: const Offset(1.3, 1.3), duration: 1500.ms),
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text(
           name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-            color: Color(0xFF2B2B2B),
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textDark),
         ),
         const SizedBox(height: 2),
         Container(
@@ -561,109 +617,154 @@ class HomeDashboardScreen extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Colors.grey,
-            ),
+            style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
           ),
         ),
         if (isMe)
-          Text(
-            '(Toca para cambiar)',
-            style: TextStyle(fontSize: 10, color: theme.primaryColor),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              'Toca para cambiar',
+              style: TextStyle(fontSize: 10, color: theme.primaryColor, fontWeight: FontWeight.w600),
+            ),
           ),
       ],
     );
   }
+
+  // ─── Love Counter Card ────────────────────────────────────────────────────
 
   Widget _buildLoveCounterCard(BuildContext context, CoupleProvider couple, ThemeProvider theme) {
     return GestureDetector(
       onTap: () => _pickAnniversaryDate(context, couple),
       child: Container(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: theme.mainGradient,
-          borderRadius: BorderRadius.circular(26),
-          boxShadow: [
-            BoxShadow(
-              color: theme.primaryColor.withOpacity(0.35),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          boxShadow: AppTheme.heroShadow,
         ),
-        child: Column(
+        child: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 18),
-                SizedBox(width: 6),
-                Text(
-                  'NUESTRA HISTORIA DE AMOR',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5,
+            // Shimmer sweep overlay
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.white.withOpacity(0.08),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
                 ),
-                SizedBox(width: 6),
-                Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 18),
-              ],
+              )
+                  .animate(onPlay: (c) => c.repeat())
+                  .shimmer(duration: 3000.ms, color: Colors.white.withOpacity(0.12)),
             ),
-            const SizedBox(height: 14),
 
-            // Giant Days Display
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+            Column(
               children: [
-                Text(
-                  '${couple.daysTogether}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 48,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Playfair Display',
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                      child: const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 14),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'NUESTRA HISTORIA DE AMOR',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.8,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                      child: const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 14),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Big days number
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${couple.daysTogether}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 64,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Playfair Display',
+                        height: 1,
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8, left: 8),
+                      child: Text(
+                        'días',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Time badges row
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _timeBadge(couple.hoursTogether.toString().padLeft(2, '0'), 'horas'),
+                      _timeSep(),
+                      _timeBadge(couple.minutesTogether.toString().padLeft(2, '0'), 'min'),
+                      _timeSep(),
+                      _timeBadge(couple.secondsTogether.toString().padLeft(2, '0'), 'seg'),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Días',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.touch_app_rounded, color: Colors.white38, size: 12),
+                    SizedBox(width: 4),
+                    Text(
+                      'Toca para cambiar la fecha de aniversario',
+                      style: TextStyle(color: Colors.white38, fontSize: 10),
+                    ),
+                  ],
                 ),
               ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Clock ticker: Hours, Minutes, Seconds
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildTimeBadge(couple.hoursTogether.toString().padLeft(2, '0'), 'Horas'),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6),
-                  child: Text(':', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-                _buildTimeBadge(couple.minutesTogether.toString().padLeft(2, '0'), 'Minutos'),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6),
-                  child: Text(':', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-                _buildTimeBadge(couple.secondsTogether.toString().padLeft(2, '0'), 'Segundos'),
-              ],
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '(Toca para cambiar fecha de aniversario)',
-              style: TextStyle(color: Colors.white70, fontSize: 10),
             ),
           ],
         ),
@@ -671,121 +772,47 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickFeaturesBar(BuildContext context, ThemeProvider theme) {
-    return Row(
+  Widget _timeBadge(String value, String label) {
+    return Column(
       children: [
-        _buildFeatureButton(
-          context,
-          emoji: '🗺️',
-          label: 'Lugares',
-          theme: theme,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const PlacesMapScreen()),
-            );
-          },
-        ),
-        const SizedBox(width: 12),
-        _buildFeatureButton(
-          context,
-          emoji: '🎲',
-          label: 'Minijuegos',
-          theme: theme,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CoupleGamesHubScreen()),
-            );
-          },
-        ),
-        const SizedBox(width: 12),
-        _buildFeatureButton(
-          context,
-          emoji: '📅',
-          label: 'Calendario',
-          theme: theme,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CoupleCalendarScreen()),
-            );
-          },
-        ),
+        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 22)),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 9, letterSpacing: 0.5)),
       ],
     );
   }
 
-  Widget _buildFeatureButton(
-    BuildContext context, {
-    required String emoji,
-    required String label,
-    required ThemeProvider theme,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.softAccentColor, width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: theme.primaryColor.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 24)),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: theme.secondaryColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+  Widget _timeSep() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12),
+      child: Text(':', style: TextStyle(color: Colors.white60, fontSize: 22, fontWeight: FontWeight.w300)),
     );
   }
 
-  Widget _buildTimeBadge(String value, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+  // ─── Feature Grid ─────────────────────────────────────────────────────────
+
+  Widget _buildFeatureGrid(BuildContext context, ThemeProvider theme) {
+    final features = [
+      _FeatureItem('🗺️', 'Lugares',    () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PlacesMapScreen()))),
+      _FeatureItem('🎲', 'Juegos',     () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CoupleGamesHubScreen()))),
+      _FeatureItem('📅', 'Calendario', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CoupleCalendarScreen()))),
+    ];
+
+    return Row(
+      children: features.asMap().entries.map((e) {
+        final i    = e.key;
+        final item = e.value;
+        return [
+          if (i > 0) const SizedBox(width: 12),
+          Expanded(
+            child: _FeatureCard(item: item, theme: theme),
           ),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 9,
-            ),
-          ),
-        ],
-      ),
+        ];
+      }).expand((x) => x).toList(),
     );
   }
+
+  // ─── Heartbeat + Pet ──────────────────────────────────────────────────────
 
   Widget _buildHeartbeatAndPetSection(
     BuildContext context,
@@ -795,9 +822,7 @@ class HomeDashboardScreen extends StatelessWidget {
   ) {
     return Row(
       children: [
-        // Heartbeat button
         Expanded(
-          flex: 1,
           child: GestureDetector(
             onTap: () {
               final user = auth.currentUser;
@@ -809,53 +834,43 @@ class HomeDashboardScreen extends StatelessWidget {
               }
             },
             child: Container(
-              height: 140,
+              height: 148,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: theme.softAccentColor, width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.primaryColor.withOpacity(0.06),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                boxShadow: AppTheme.cardShadow,
+                border: Border.all(color: theme.softAccentColor.withOpacity(0.8), width: 1),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    width: 58,
+                    height: 58,
                     decoration: BoxDecoration(
-                      color: theme.softAccentColor,
+                      gradient: theme.mainGradient,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.primaryColor.withOpacity(0.3),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
-                    child: Icon(
-                      Icons.favorite_rounded,
-                      color: theme.primaryColor,
-                      size: 32,
+                    child: const Center(
+                      child: Icon(Icons.favorite_rounded, color: Colors.white, size: 28),
                     ),
-                  ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                        begin: const Offset(1, 1),
-                        end: const Offset(1.15, 1.15),
-                        duration: 800.ms,
-                      ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Enviar Latido',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: theme.secondaryColor,
-                    ),
-                  ),
-                  const Text(
-                    'Vibra su cel 💕',
-                    style: TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
+                  )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .scale(begin: const Offset(1, 1), end: const Offset(1.14, 1.14), duration: 800.ms, curve: Curves.easeInOut),
+                  const SizedBox(height: 10),
+                  Text('Enviar Latido',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: theme.secondaryColor)),
+                  const SizedBox(height: 2),
+                  const Text('Vibra su celular 💕', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
                 ],
               ),
             ),
@@ -864,65 +879,50 @@ class HomeDashboardScreen extends StatelessWidget {
 
         const SizedBox(width: 14),
 
-        // Virtual Pet Card (Opens Pet Sanctuary)
         Expanded(
-          flex: 1,
           child: GestureDetector(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PetSanctuaryScreen()),
-              );
-            },
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PetSanctuaryScreen())),
             child: Container(
-              height: 140,
+              height: 148,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: theme.softAccentColor, width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.primaryColor.withOpacity(0.06),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                boxShadow: AppTheme.cardShadow,
+                border: Border.all(color: theme.softAccentColor.withOpacity(0.8), width: 1),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('🐾', style: TextStyle(fontSize: 32)),
-                  const SizedBox(height: 4),
+                  Text(
+                    couple.petLevel >= 5 ? '🐉' : couple.petLevel >= 3 ? '🐺' : '🐾',
+                    style: const TextStyle(fontSize: 34),
+                  )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .moveY(begin: 0, end: -4, duration: 1200.ms, curve: Curves.easeInOut),
+                  const SizedBox(height: 6),
                   Text(
                     couple.petName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Color(0xFF2B2B2B),
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textDark),
                   ),
                   Text(
                     'Nivel ${couple.petLevel}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: theme.primaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 11, color: theme.primaryColor, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 6),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                     child: LinearProgressIndicator(
                       value: (couple.petXp % 100) / 100.0,
                       backgroundColor: theme.softAccentColor,
                       valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
-                      minHeight: 6,
+                      minHeight: 5,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Toca para cuidar 🍖',
-                    style: TextStyle(fontSize: 9, color: theme.primaryColor, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 9, color: theme.primaryColor, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -933,26 +933,36 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
+  // ─── Daily Spark Banner ───────────────────────────────────────────────────
+
   Widget _buildDailySparkBanner(BuildContext context, CoupleProvider couple, ThemeProvider theme) {
-    final todayQ = couple.todayQuestion;
-    final isAnswered = todayQ?['user_answered'] ?? false;
+    final isAnswered = couple.todayQuestion?['user_answered'] ?? false;
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.softAccentColor.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+        gradient: LinearGradient(
+          colors: [
+            theme.primaryColor.withOpacity(0.08),
+            theme.primaryColor.withOpacity(0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(color: theme.primaryColor.withOpacity(0.15), width: 1),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: theme.mainGradient,
               shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: theme.primaryColor.withOpacity(0.3), blurRadius: 10)],
             ),
-            child: const Text('💬', style: TextStyle(fontSize: 22)),
+            child: const Center(child: Text('💬', style: TextStyle(fontSize: 22))),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -960,57 +970,55 @@ class HomeDashboardScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pregunta del Día',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: theme.secondaryColor,
-                  ),
+                  isAnswered ? '¡Ya respondiste hoy! ✅' : 'Pregunta del Día 💫',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: theme.secondaryColor),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  isAnswered ? '¡Ya respondiste hoy! Revisa lo que dijo tu pareja.' : 'Descubre qué piensa tu pareja hoy.',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  isAnswered ? 'Revisa lo que respondió tu pareja.' : 'Descubre qué piensa tu pareja hoy.',
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.primaryColor),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.arrow_forward_rounded, size: 16, color: theme.primaryColor),
+          ),
         ],
       ),
     );
   }
 
+  // ─── Widgets Studio Banner ────────────────────────────────────────────────
+
   Widget _buildWidgetsStudioBanner(BuildContext context, ThemeProvider theme) {
     return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const WidgetsStudioScreen()),
-        );
-      },
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WidgetsStudioScreen())),
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: theme.softAccentColor, width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: theme.primaryColor.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          boxShadow: AppTheme.cardShadow,
+          border: Border.all(color: theme.softAccentColor.withOpacity(0.8), width: 1),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: theme.softAccentColor,
+                gradient: LinearGradient(
+                  colors: [theme.primaryColor.withOpacity(0.15), theme.primaryColor.withOpacity(0.05)],
+                ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.widgets_rounded, color: theme.primaryColor, size: 22),
+              child: Center(child: Icon(Icons.widgets_rounded, color: theme.primaryColor, size: 22)),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1019,22 +1027,101 @@ class HomeDashboardScreen extends StatelessWidget {
                 children: [
                   Text(
                     'Widgets de Pantalla de Inicio 📱',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: theme.secondaryColor,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: theme.secondaryColor),
                   ),
                   const SizedBox(height: 2),
                   const Text(
-                    'Ver vistas previas y cómo agregarlos a tu celular.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    'Añade el contador de amor directo en tu celular.',
+                    style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.primaryColor),
+            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: theme.primaryColor),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Feature Card ─────────────────────────────────────────────────────────────
+
+class _FeatureItem {
+  const _FeatureItem(this.emoji, this.label, this.onTap);
+  final String emoji;
+  final String label;
+  final VoidCallback onTap;
+}
+
+class _FeatureCard extends StatefulWidget {
+  const _FeatureCard({required this.item, required this.theme});
+  final _FeatureItem item;
+  final ThemeProvider theme;
+
+  @override
+  State<_FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<_FeatureCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 140));
+    _scale = Tween(begin: 1.0, end: 0.94).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) { _ctrl.reverse(); widget.item.onTap(); },
+      onTapCancel: () => _ctrl.reverse(),
+      child: ScaleTransition(
+        scale: _scale,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            boxShadow: AppTheme.cardShadow,
+            border: Border.all(color: widget.theme.softAccentColor.withOpacity(0.8), width: 1),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      widget.theme.primaryColor.withOpacity(0.12),
+                      widget.theme.primaryColor.withOpacity(0.04),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(child: Text(widget.item.emoji, style: const TextStyle(fontSize: 20))),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.item.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: widget.theme.secondaryColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
