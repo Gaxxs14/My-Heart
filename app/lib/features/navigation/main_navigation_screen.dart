@@ -115,23 +115,19 @@ class _FloatingNavBar extends StatelessWidget {
         bottom: bottomPadding + 12,
         top: 0,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            height: 68,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.88),
-              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-              border: Border.all(
-                color: AppTheme.primaryRose.withOpacity(0.15),
-                width: 1.2,
-              ),
-              boxShadow: AppTheme.navShadow,
-            ),
-            child: Row(
-              children: List.generate(items.length, (i) {
+      child: Container(
+        height: 68,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          border: Border.all(
+            color: AppTheme.primaryRose.withOpacity(0.12),
+            width: 1.2,
+          ),
+          boxShadow: AppTheme.navShadow,
+        ),
+        child: Row(
+          children: List.generate(items.length, (i) {
                 final selected = i == currentIndex;
                 return Expanded(
                   child: _NavTabItem(
@@ -143,8 +139,6 @@ class _FloatingNavBar extends StatelessWidget {
               }),
             ),
           ),
-        ),
-      ),
     );
   }
 }

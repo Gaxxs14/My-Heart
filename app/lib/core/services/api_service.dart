@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_constants.dart';
@@ -49,7 +50,7 @@ class ApiService {
     return headers;
   }
 
-  // Generic GET with Timeout
+  // Generic GET with extended 45s Timeout for cloud cold-starts
   Future<dynamic> get(String endpoint) async {
     try {
       final response = await http
@@ -57,19 +58,19 @@ class ApiService {
             Uri.parse('$_baseUrl$endpoint'),
             headers: _headers(),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 45));
       return _handleResponse(response);
     } on TimeoutException {
-      throw Exception('El servidor está iniciando en la nube. Espera unos segundos e intenta de nuevo.');
+      throw Exception('El servidor en la nube está despertando. Por favor intenta de nuevo en unos segundos.');
     } catch (e) {
       if (e.toString().contains('SocketException') || e.toString().contains('Failed host lookup')) {
-        throw Exception('No hay conexión a internet o el servidor no responde.');
+        throw Exception('No se pudo conectar al servidor. Revisa tu conexión a internet.');
       }
       rethrow;
     }
   }
 
-  // Generic POST with Timeout
+  // Generic POST with extended 45s Timeout
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
     try {
       final response = await http
@@ -78,19 +79,19 @@ class ApiService {
             headers: _headers(),
             body: jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 45));
       return _handleResponse(response);
     } on TimeoutException {
-      throw Exception('El servidor está iniciando en la nube. Espera unos segundos e intenta de nuevo.');
+      throw Exception('El servidor en la nube está despertando. Por favor intenta de nuevo en unos segundos.');
     } catch (e) {
       if (e.toString().contains('SocketException') || e.toString().contains('Failed host lookup')) {
-        throw Exception('No hay conexión a internet o el servidor no responde.');
+        throw Exception('No se pudo conectar al servidor. Revisa tu conexión a internet.');
       }
       rethrow;
     }
   }
 
-  // Generic PATCH with Timeout
+  // Generic PATCH with extended 45s Timeout
   Future<dynamic> patch(String endpoint, Map<String, dynamic> body) async {
     try {
       final response = await http
@@ -99,19 +100,19 @@ class ApiService {
             headers: _headers(),
             body: jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 45));
       return _handleResponse(response);
     } on TimeoutException {
-      throw Exception('El servidor está iniciando en la nube. Espera unos segundos e intenta de nuevo.');
+      throw Exception('El servidor en la nube está despertando. Por favor intenta de nuevo en unos segundos.');
     } catch (e) {
       if (e.toString().contains('SocketException') || e.toString().contains('Failed host lookup')) {
-        throw Exception('No hay conexión a internet o el servidor no responde.');
+        throw Exception('No se pudo conectar al servidor. Revisa tu conexión a internet.');
       }
       rethrow;
     }
   }
 
-  // Generic DELETE with Timeout
+  // Generic DELETE with extended 45s Timeout
   Future<dynamic> delete(String endpoint) async {
     try {
       final response = await http
@@ -119,13 +120,13 @@ class ApiService {
             Uri.parse('$_baseUrl$endpoint'),
             headers: _headers(),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 45));
       return _handleResponse(response);
     } on TimeoutException {
-      throw Exception('El servidor está iniciando en la nube. Espera unos segundos e intenta de nuevo.');
+      throw Exception('El servidor en la nube está despertando. Por favor intenta de nuevo en unos segundos.');
     } catch (e) {
       if (e.toString().contains('SocketException') || e.toString().contains('Failed host lookup')) {
-        throw Exception('No hay conexión a internet o el servidor no responde.');
+        throw Exception('No se pudo conectar al servidor. Revisa tu conexión a internet.');
       }
       rethrow;
     }
@@ -141,7 +142,7 @@ class ApiService {
       }
     } on FormatException {
       if (response.statusCode >= 500) {
-        throw Exception('El servidor se está iniciando en Render. Por favor espera unos momentos.');
+        throw Exception('El servidor se está iniciando en la nube. Por favor espera unos momentos.');
       }
       throw Exception('Respuesta inesperada del servidor (${response.statusCode})');
     }

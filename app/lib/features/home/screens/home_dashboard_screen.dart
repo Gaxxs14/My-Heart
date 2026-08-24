@@ -321,53 +321,48 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  // ─── Blur AppBar ──────────────────────────────────────────────────────────
-
+  // ─── Header AppBar ────────────────────────────────────────────────────────
   PreferredSizeWidget _buildBlurAppBar(BuildContext context, AuthProvider auth, CoupleProvider couple, ThemeProvider theme) {
     return PreferredSize(
       preferredSize: const Size.fromHeight(64),
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: AppBar(
-            backgroundColor: Colors.white.withOpacity(0.80),
-            elevation: 0,
-            title: Row(
-              children: [
-                ShaderMask(
-                  shaderCallback: (b) => AppTheme.loveGradient.createShader(b),
-                  child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 22),
-                ),
-                const SizedBox(width: 8),
-                ShaderMask(
-                  shaderCallback: (b) => AppTheme.loveGradient.createShader(b),
-                  child: Text(
-                    'My Heart',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 20,
-                      letterSpacing: -0.3,
-                      fontFamily: 'Playfair Display',
-                    ),
-                  ),
-                ),
-              ],
+      child: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        title: Row(
+          children: [
+            ShaderMask(
+              shaderCallback: (b) => AppTheme.loveGradient.createShader(b),
+              child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 22),
             ),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.palette_outlined, color: theme.primaryColor),
-                tooltip: 'Personalizar',
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
+            const SizedBox(width: 8),
+            ShaderMask(
+              shaderCallback: (b) => AppTheme.loveGradient.createShader(b),
+              child: const Text(
+                'My Heart',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  letterSpacing: -0.3,
+                  fontFamily: 'Playfair Display',
+                ),
               ),
-              IconButton(
-                icon: Icon(Icons.more_vert_rounded, color: theme.secondaryColor),
-                tooltip: 'Ajustes',
-                onPressed: () => _showSettingsModal(context, auth, couple, theme),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.palette_outlined, color: theme.primaryColor),
+            tooltip: 'Personalizar',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
+          ),
+          IconButton(
+            icon: Icon(Icons.more_vert_rounded, color: theme.secondaryColor),
+            tooltip: 'Ajustes',
+            onPressed: () => _showSettingsModal(context, auth, couple, theme),
+          ),
+        ],
       ),
     );
   }
