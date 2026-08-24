@@ -296,7 +296,7 @@ class HomeDashboardScreen extends StatelessWidget {
                             .animate().fadeIn(duration: 350.ms).slideY(begin: -0.05, end: 0),
 
                       // 1. Dual Avatars Hero
-                      _buildDualAvatarsSection(context, auth.currentUser, auth.partnerUser, theme, auth.isPaired)
+                      _buildDualAvatarsSection(context, auth.currentUser, auth.partnerUser, couple, auth, theme, auth.isPaired)
                           .animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0),
 
                       const SizedBox(height: 16),
@@ -495,6 +495,8 @@ class HomeDashboardScreen extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic>? user,
     Map<String, dynamic>? partner,
+    CoupleProvider couple,
+    AuthProvider auth,
     ThemeProvider theme,
     bool isPaired,
   ) {
@@ -520,7 +522,7 @@ class HomeDashboardScreen extends StatelessWidget {
               theme: theme,
             ),
           ),
-          _buildHeartBridge(theme),
+          _buildHeartBridge(context, couple, auth, theme),
           if (isPaired && partner != null && partner['id'] != null)
             _buildAvatar(
               name: partner['nickname'] ?? partner['name'] ?? 'Mi Amor',
@@ -619,54 +621,74 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeartBridge(ThemeProvider theme) {
-    return Column(
-      children: [
-        Container(
-          width: 1,
-          height: 20,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.transparent, theme.primaryColor.withOpacity(0.3)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
+  Widget _buildHeartBridge(BuildContext context, CoupleProvider couple, AuthProvider auth, ThemeProvider theme) {
+    return GestureDetector(
+      onTap: () {
+        if (!auth.isPaired) {
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PairingScreen()));
+          return;
+        }
+        final userId = auth.currentUser?['id'] ?? '';
+        final userName = auth.currentUser?['nickname'] ?? auth.currentUser?['name'] ?? 'Tu pareja';
+        couple.sendHeartbeat(userId: userId, userName: userName);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('💓 ¡Latido de amor enviado a tu pareja!'),
+            backgroundColor: AppTheme.primaryRose,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
           ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            gradient: theme.mainGradient,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: theme.primaryColor.withOpacity(0.4),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+        );
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 1,
+            height: 20,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.transparent, theme.primaryColor.withOpacity(0.3)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-            ],
-          ),
-          child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
-        )
-            .animate(onPlay: (c) => c.repeat(reverse: true))
-            .scale(begin: const Offset(1, 1), end: const Offset(1.18, 1.18), duration: 900.ms, curve: Curves.easeInOut),
-        Container(
-          width: 1,
-          height: 20,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [theme.primaryColor.withOpacity(0.3), Colors.transparent],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
             ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Juntos ∞',
-          style: TextStyle(fontSize: 10, color: theme.primaryColor, fontWeight: FontWeight.w700, letterSpacing: 0.5),
-        ),
-      ],
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: theme.mainGradient,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: theme.primaryColor.withOpacity(0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
+          )
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .scale(begin: const Offset(1, 1), end: const Offset(1.18, 1.18), duration: 900.ms, curve: Curves.easeInOut),
+          Container(
+            width: 1,
+            height: 20,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [theme.primaryColor.withOpacity(0.3), Colors.transparent],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            auth.isPaired ? 'Enviar Latido 💓' : 'Juntos ∞',
+            style: TextStyle(fontSize: 10, color: theme.primaryColor, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+          ),
+        ],
+      ),
     );
   }
 
