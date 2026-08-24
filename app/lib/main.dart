@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/couple_provider.dart';
 import 'features/auth/screens/login_screen.dart';
@@ -19,14 +19,19 @@ class MyHeartApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuthStatus()),
         ChangeNotifierProvider(create: (_) => CoupleProvider()),
       ],
-      child: MaterialApp(
-        title: 'My Heart',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        home: const AuthGateway(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'My Heart',
+            debugShowCheckedModeBanner: false,
+            theme: themeProvider.themeData,
+            home: const AuthGateway(),
+          );
+        },
       ),
     );
   }
@@ -54,9 +59,9 @@ class AuthGateway extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.favorite, color: AppTheme.primaryRose, size: 60),
+                Icon(Icons.favorite, color: Color(0xFFFF5E7E), size: 60),
                 SizedBox(height: 16),
-                CircularProgressIndicator(color: AppTheme.primaryRose),
+                CircularProgressIndicator(color: Color(0xFFFF5E7E)),
               ],
             ),
           ),

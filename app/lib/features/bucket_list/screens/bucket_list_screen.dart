@@ -1,8 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_provider.dart';
 
 class BucketListScreen extends StatefulWidget {
   const BucketListScreen({super.key});
@@ -41,7 +42,7 @@ class _BucketListScreenState extends State<BucketListScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Row(
             children: const [
-              Icon(Icons.casino_rounded, color: AppTheme.primaryRose),
+              Icon(Icons.casino_rounded, color: Color(0xFFFF5E7E)),
               SizedBox(width: 8),
               Text('Ruleta de Citas 🎲', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
@@ -49,19 +50,19 @@ class _BucketListScreenState extends State<BucketListScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('¿No saben qué hacer hoy? El destino ha elegido:', style: TextStyle(color: AppTheme.textMuted)),
+              const Text('¿No saben qué hacer hoy? El destino ha elegido:', style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.softPink.withOpacity(0.5),
+                  color: const Color(0xFFFFF0F3),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.primaryRose.withOpacity(0.4)),
+                  border: Border.all(color: const Color(0xFFFFE3E8)),
                 ),
                 child: Text(
                   randomIdea,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.deepWine),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF880E4F)),
                 ),
               ),
             ],
@@ -93,6 +94,8 @@ class _BucketListScreenState extends State<BucketListScreen> {
   void _showAddItemDialog() {
     final titleController = TextEditingController();
     final descController = TextEditingController();
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final myName = auth.currentUser?['nickname'] ?? auth.currentUser?['name'] ?? 'Tú';
     String category = 'date_night';
 
     showModalBottomSheet(
@@ -116,19 +119,16 @@ class _BucketListScreenState extends State<BucketListScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Nueva Meta o Deseo 🎯',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.deepWine,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  const Text(
+                    'Nueva Meta o Cita Soñada 🎯',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF880E4F)),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: titleController,
                     decoration: const InputDecoration(
                       labelText: '¿Qué sueño o cita quieren cumplir?',
-                      hintText: 'Ej. Viajar juntos a París, Adoptar un perrito',
+                      hintText: 'Ej. Viajar juntos a París, Noche de cine',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -176,6 +176,9 @@ class _BucketListScreenState extends State<BucketListScreen> {
 
                         if (context.mounted) {
                           Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('¡Meta creada por $myName guardada! 💖')),
+                          );
                         }
                       },
                       child: const Text('Guardar Meta'),
@@ -193,6 +196,7 @@ class _BucketListScreenState extends State<BucketListScreen> {
   @override
   Widget build(BuildContext context) {
     final couple = Provider.of<CoupleProvider>(context);
+    final theme = Provider.of<ThemeProvider>(context);
     final items = couple.bucketList;
 
     return Scaffold(
@@ -203,34 +207,34 @@ class _BucketListScreenState extends State<BucketListScreen> {
         title: Text(
           'Bucket List & Citas 🎯',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppTheme.deepWine,
+                color: theme.secondaryColor,
                 fontWeight: FontWeight.bold,
               ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.casino_rounded, color: AppTheme.primaryRose),
+            icon: const Icon(Icons.casino_rounded),
             tooltip: 'Ruleta de Citas',
             onPressed: _showDateRouletteDialog,
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppTheme.primaryRose,
+        backgroundColor: theme.primaryColor,
         onPressed: _showAddItemDialog,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text('Nueva Meta', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFF0F3), Colors.white],
+            colors: [theme.softAccentColor.withOpacity(0.5), Colors.white],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
         child: couple.isLoadingBucket
-            ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryRose))
+            ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
             : items.isEmpty
                 ? Center(
                     child: Column(
@@ -240,13 +244,13 @@ class _BucketListScreenState extends State<BucketListScreen> {
                         const SizedBox(height: 16),
                         const Text(
                           'Su lista de deseos está vacía',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.deepWine),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF880E4F)),
                         ),
                         const SizedBox(height: 8),
                         const Text(
                           'Prueba la ruleta de citas o añade sus sueños juntos.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: AppTheme.textMuted),
+                          style: TextStyle(color: Colors.grey),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
@@ -263,6 +267,7 @@ class _BucketListScreenState extends State<BucketListScreen> {
                     itemBuilder: (context, index) {
                       final item = items[index];
                       final isCompleted = item['is_completed'] ?? false;
+                      final creatorName = item['creator_name'] ?? item['author_name'] ?? 'Tú';
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -271,11 +276,19 @@ class _BucketListScreenState extends State<BucketListScreen> {
                           color: isCompleted ? const Color(0xFFF1F8E9) : Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isCompleted ? Colors.green.shade200 : const Color(0xFFFFE3E8),
+                            color: isCompleted ? Colors.green.shade200 : theme.softAccentColor,
                             width: 1.2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.primaryColor.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Checkbox(
                               value: isCompleted,
@@ -296,22 +309,44 @@ class _BucketListScreenState extends State<BucketListScreen> {
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       decoration: isCompleted ? TextDecoration.lineThrough : null,
-                                      color: isCompleted ? Colors.grey : AppTheme.textDark,
+                                      color: isCompleted ? Colors.grey : const Color(0xFF2B2B2B),
                                     ),
                                   ),
-                                  if (item['description'] != null && item['description'].toString().isNotEmpty)
+                                  if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
+                                    const SizedBox(height: 4),
                                     Text(
                                       item['description'],
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: isCompleted ? Colors.grey.shade400 : AppTheme.textMuted,
+                                        color: isCompleted ? Colors.grey.shade400 : Colors.grey.shade600,
                                       ),
                                     ),
+                                  ],
+                                  const SizedBox(height: 6),
+                                  // Creator badge
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isCompleted ? Colors.green.shade50 : theme.softAccentColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '💡 Idea de: $creatorName 💕',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: isCompleted ? Colors.green.shade800 : theme.primaryColor,
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
                             if (isCompleted)
-                              const Text('🎉 +50 XP', style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold)),
+                              const Padding(
+                                padding: EdgeInsets.only(left: 4, top: 4),
+                                child: Text('🎉 +50 XP', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold)),
+                              ),
                           ],
                         ),
                       );

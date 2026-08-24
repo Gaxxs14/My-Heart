@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../widgets_studio/screens/widgets_studio_screen.dart';
+import '../../pet/screens/pet_sanctuary_screen.dart';
+import '../../profile/screens/profile_screen.dart';
+import '../../heartbeat/widgets/heart_animation_overlay.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
 
   void _showMoodPicker(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    final theme = Provider.of<ThemeProvider>(context, listen: false);
 
     final moods = [
       {'status': 'Enamorado/a 🥰', 'icon': '🥰'},
@@ -41,10 +46,11 @@ class HomeDashboardScreen extends StatelessWidget {
                 children: [
                   Text(
                     '¿Cómo te sientes ahora?',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.deepWine,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: TextStyle(
+                      color: theme.secondaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
@@ -60,14 +66,14 @@ class HomeDashboardScreen extends StatelessWidget {
                   return ActionChip(
                     avatar: Text(m['icon']!, style: const TextStyle(fontSize: 18)),
                     label: Text(m['status']!),
-                    backgroundColor: AppTheme.softPink.withOpacity(0.5),
-                    labelStyle: const TextStyle(
-                      color: AppTheme.deepWine,
+                    backgroundColor: theme.softAccentColor.withOpacity(0.5),
+                    labelStyle: TextStyle(
+                      color: theme.secondaryColor,
                       fontWeight: FontWeight.w600,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
-                      side: const BorderSide(color: Color(0xFFFFE3E8)),
+                      side: BorderSide(color: theme.softAccentColor),
                     ),
                     onPressed: () {
                       auth.updateMood(m['status']!, m['icon']!);
@@ -90,7 +96,7 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  void _showSettingsModal(BuildContext context, AuthProvider auth, CoupleProvider couple) {
+  void _showSettingsModal(BuildContext context, AuthProvider auth, CoupleProvider couple, ThemeProvider theme) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -108,11 +114,12 @@ class HomeDashboardScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Ajustes y Cuenta 💖',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.deepWine,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    'Ajustes & Cuenta 💖',
+                    style: TextStyle(
+                      color: theme.secondaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
@@ -124,18 +131,28 @@ class HomeDashboardScreen extends StatelessWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: CircleAvatar(
-                  backgroundColor: AppTheme.softPink,
-                  child: const Icon(Icons.person_rounded, color: AppTheme.primaryRose),
+                  backgroundColor: theme.softAccentColor,
+                  child: Icon(Icons.person_rounded, color: theme.primaryColor),
                 ),
                 title: Text(auth.currentUser?['name'] ?? 'Usuario'),
                 subtitle: Text('Apodo: ${auth.currentUser?['nickname'] ?? 'Sin apodo'} • ${auth.isDemoMode ? "Modo Demo" : "Conectado a la Nube"}'),
+                trailing: TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_rounded, size: 16),
+                  label: const Text('Editar'),
+                ),
               ),
               const Divider(),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: CircleAvatar(
-                  backgroundColor: AppTheme.softPink,
-                  child: const Icon(Icons.favorite_rounded, color: AppTheme.primaryRose),
+                  backgroundColor: theme.softAccentColor,
+                  child: Icon(Icons.favorite_rounded, color: theme.primaryColor),
                 ),
                 title: Text('Pareja: ${auth.partnerUser?['name'] ?? "Mi Amor"}'),
                 subtitle: Text('Mascota: ${couple.petName} (Nivel ${couple.petLevel})'),
@@ -162,10 +179,32 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _pickAnniversaryDate(BuildContext context, CoupleProvider couple) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365)),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      helpText: '¿CUÁNDO COMENZÓ SU HISTORIA?',
+    );
+
+    if (picked != null && couple.coupleData != null) {
+      couple.coupleData!['anniversary_date'] = picked.toIso8601String().split('T').first;
+      couple.coupleData!['relationship_time_start'] = picked.toIso8601String();
+      couple.notifyListeners();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('¡Fecha de aniversario actualizada al ${DateFormat('dd MMM yyyy').format(picked)}! 💖')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final couple = Provider.of<CoupleProvider>(context);
+    final theme = Provider.of<ThemeProvider>(context);
 
     final currentUser = auth.currentUser;
     final partnerUser = auth.partnerUser;
@@ -178,23 +217,33 @@ class HomeDashboardScreen extends StatelessWidget {
             elevation: 0,
             title: Row(
               children: [
-                const Icon(Icons.favorite, color: AppTheme.primaryRose, size: 24),
+                Icon(Icons.favorite, color: theme.primaryColor, size: 24),
                 const SizedBox(width: 8),
                 Text(
                   'My Heart',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppTheme.deepWine,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
+                  style: TextStyle(
+                    color: theme.secondaryColor,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                    fontSize: 22,
+                  ),
                 ),
               ],
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.settings_outlined, color: AppTheme.deepWine),
-                tooltip: 'Ajustes y Perfil',
-                onPressed: () => _showSettingsModal(context, auth, couple),
+                icon: Icon(Icons.palette_outlined, color: theme.secondaryColor),
+                tooltip: 'Personalizar Colores',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.settings_outlined, color: theme.secondaryColor),
+                tooltip: 'Ajustes',
+                onPressed: () => _showSettingsModal(context, auth, couple, theme),
               ),
             ],
           ),
@@ -205,7 +254,7 @@ class HomeDashboardScreen extends StatelessWidget {
               children: [
                 if (auth.isDemoMode)
                   GestureDetector(
-                    onTap: () => _showSettingsModal(context, auth, couple),
+                    onTap: () => _showSettingsModal(context, auth, couple, theme),
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -231,27 +280,27 @@ class HomeDashboardScreen extends StatelessWidget {
                   ),
 
                 // 1. Dual Avatars with mood
-                _buildDualAvatarsSection(context, currentUser, partnerUser),
+                _buildDualAvatarsSection(context, currentUser, partnerUser, theme),
 
                 const SizedBox(height: 20),
 
                 // 2. Love Counter Card (Days, Hours, Minutes, Seconds)
-                _buildLoveCounterCard(context, couple),
+                _buildLoveCounterCard(context, couple, theme),
 
                 const SizedBox(height: 20),
 
                 // 3. Heartbeat Button & Pet Card
-                _buildHeartbeatAndPetSection(context, auth, couple),
+                _buildHeartbeatAndPetSection(context, auth, couple, theme),
 
                 const SizedBox(height: 20),
 
                 // 4. Daily Spark Banner
-                _buildDailySparkBanner(context, couple),
+                _buildDailySparkBanner(context, couple, theme),
 
                 const SizedBox(height: 16),
 
                 // 5. Widgets Studio Shortcut
-                _buildWidgetsStudioBanner(context),
+                _buildWidgetsStudioBanner(context, theme),
 
                 const SizedBox(height: 24),
               ],
@@ -261,7 +310,10 @@ class HomeDashboardScreen extends StatelessWidget {
 
         // Fullscreen Heartbeat Celebration Animation
         if (couple.showHeartbeatAnimation)
-          _buildHeartbeatCelebrationOverlay(couple.lastHeartbeatSender ?? 'Tu pareja'),
+          HeartAnimationOverlay(
+            senderName: couple.lastHeartbeatSender ?? 'Tu pareja',
+            onDismiss: () {},
+          ),
       ],
     );
   }
@@ -270,16 +322,17 @@ class HomeDashboardScreen extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic>? user,
     Map<String, dynamic>? partner,
+    ThemeProvider theme,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFFFE3E8), width: 1.2),
+        border: Border.all(color: theme.softAccentColor, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryRose.withOpacity(0.06),
+            color: theme.primaryColor.withOpacity(0.06),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -296,6 +349,7 @@ class HomeDashboardScreen extends StatelessWidget {
               mood: user?['mood_status'] ?? 'Enamorado/a 🥰',
               icon: user?['mood_icon'] ?? '🥰',
               isMe: true,
+              theme: theme,
             ),
           ),
 
@@ -304,13 +358,13 @@ class HomeDashboardScreen extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: AppTheme.softPink,
+                decoration: BoxDecoration(
+                  color: theme.softAccentColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.favorite_rounded,
-                  color: AppTheme.primaryRose,
+                  color: theme.primaryColor,
                   size: 22,
                 ),
               ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
@@ -321,7 +375,7 @@ class HomeDashboardScreen extends StatelessWidget {
               const SizedBox(height: 4),
               const Text(
                 'Juntos',
-                style: TextStyle(fontSize: 11, color: AppTheme.textMuted, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -332,7 +386,8 @@ class HomeDashboardScreen extends StatelessWidget {
             mood: partner?['mood_status'] ?? 'Pensando en ti 💭',
             icon: partner?['mood_icon'] ?? '💭',
             isMe: false,
-            isOnline: partner?['is_online'] ?? false,
+            isOnline: partner?['is_online'] ?? true,
+            theme: theme,
           ),
         ],
       ),
@@ -345,6 +400,7 @@ class HomeDashboardScreen extends StatelessWidget {
     required String icon,
     required bool isMe,
     bool isOnline = false,
+    required ThemeProvider theme,
   }) {
     return Column(
       children: [
@@ -356,11 +412,11 @@ class HomeDashboardScreen extends StatelessWidget {
               height: 70,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: isMe ? AppTheme.loveGradient : null,
-                color: isMe ? null : AppTheme.deepWine,
+                gradient: isMe ? theme.mainGradient : null,
+                color: isMe ? null : theme.secondaryColor,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryRose.withOpacity(0.25),
+                    color: theme.primaryColor.withOpacity(0.25),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -386,7 +442,7 @@ class HomeDashboardScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.softPink, width: 1.5),
+                  border: Border.all(color: theme.softAccentColor, width: 1.5),
                 ),
                 child: Text(icon, style: const TextStyle(fontSize: 14)),
               ),
@@ -413,7 +469,7 @@ class HomeDashboardScreen extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 15,
-            color: AppTheme.textDark,
+            color: Color(0xFF2B2B2B),
           ),
         ),
         const SizedBox(height: 2),
@@ -426,102 +482,110 @@ class HomeDashboardScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 11,
-              color: AppTheme.textMuted,
+              color: Colors.grey,
             ),
           ),
         ),
         if (isMe)
-          const Text(
+          Text(
             '(Toca para cambiar)',
-            style: TextStyle(fontSize: 10, color: AppTheme.primaryRose),
+            style: TextStyle(fontSize: 10, color: theme.primaryColor),
           ),
       ],
     );
   }
 
-  Widget _buildLoveCounterCard(BuildContext context, CoupleProvider couple) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: AppTheme.loveGradient,
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryRose.withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.auto_awesome, color: AppTheme.romanticGold, size: 18),
-              SizedBox(width: 6),
-              Text(
-                'NUESTRA HISTORIA DE AMOR',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.5,
+  Widget _buildLoveCounterCard(BuildContext context, CoupleProvider couple, ThemeProvider theme) {
+    return GestureDetector(
+      onTap: () => _pickAnniversaryDate(context, couple),
+      child: Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          gradient: theme.mainGradient,
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [
+            BoxShadow(
+              color: theme.primaryColor.withOpacity(0.35),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 18),
+                SizedBox(width: 6),
+                Text(
+                  'NUESTRA HISTORIA DE AMOR',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                  ),
                 ),
-              ),
-              SizedBox(width: 6),
-              Icon(Icons.auto_awesome, color: AppTheme.romanticGold, size: 18),
-            ],
-          ),
-          const SizedBox(height: 14),
+                SizedBox(width: 6),
+                Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 18),
+              ],
+            ),
+            const SizedBox(height: 14),
 
-          // Giant Days Display
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '${couple.daysTogether}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 48,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Playfair Display',
+            // Giant Days Display
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  '${couple.daysTogether}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 48,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Playfair Display',
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Días',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                const Text(
+                  'Días',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Clock ticker: Hours, Minutes, Seconds
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildTimeBadge('${couple.hoursTogether.toString().padLeft(2, '0')}', 'Horas'),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6),
-                child: Text(':', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-              _buildTimeBadge('${couple.minutesTogether.toString().padLeft(2, '0')}', 'Minutos'),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6),
-                child: Text(':', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-              _buildTimeBadge('${couple.secondsTogether.toString().padLeft(2, '0')}', 'Segundos'),
-            ],
-          ),
-        ],
+            // Clock ticker: Hours, Minutes, Seconds
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildTimeBadge(couple.hoursTogether.toString().padLeft(2, '0'), 'Horas'),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: Text(':', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                _buildTimeBadge(couple.minutesTogether.toString().padLeft(2, '0'), 'Minutos'),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: Text(':', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                _buildTimeBadge(couple.secondsTogether.toString().padLeft(2, '0'), 'Segundos'),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '(Toca para cambiar fecha de aniversario)',
+              style: TextStyle(color: Colors.white70, fontSize: 10),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -559,6 +623,7 @@ class HomeDashboardScreen extends StatelessWidget {
     BuildContext context,
     AuthProvider auth,
     CoupleProvider couple,
+    ThemeProvider theme,
   ) {
     return Row(
       children: [
@@ -581,10 +646,10 @@ class HomeDashboardScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFFFE3E8), width: 1.2),
+                border: Border.all(color: theme.softAccentColor, width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryRose.withOpacity(0.06),
+                    color: theme.primaryColor.withOpacity(0.06),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -596,12 +661,12 @@ class HomeDashboardScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.softPink,
+                      color: theme.softAccentColor,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.favorite_rounded,
-                      color: AppTheme.primaryRose,
+                      color: theme.primaryColor,
                       size: 32,
                     ),
                   ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
@@ -610,18 +675,18 @@ class HomeDashboardScreen extends StatelessWidget {
                         duration: 800.ms,
                       ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Enviar Latido',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: AppTheme.deepWine,
+                      color: theme.secondaryColor,
                     ),
                   ),
                   const Text(
                     'Vibra su cel 💕',
-                    style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                    style: TextStyle(fontSize: 10, color: Colors.grey),
                   ),
                 ],
               ),
@@ -631,23 +696,14 @@ class HomeDashboardScreen extends StatelessWidget {
 
         const SizedBox(width: 14),
 
-        // Virtual Pet Card
+        // Virtual Pet Card (Opens Pet Sanctuary)
         Expanded(
           flex: 1,
           child: GestureDetector(
             onTap: () {
-              // Pet/feed Corazoncito
-              if (couple.coupleData != null) {
-                couple.coupleData!['pet_xp'] = (couple.coupleData!['pet_xp'] as int) + 5;
-                couple.notifyListeners();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('¡Acariciaste a ${couple.petName}! 🐾 +5 XP 💕'),
-                    duration: const Duration(seconds: 2),
-                    backgroundColor: AppTheme.primaryRose,
-                  ),
-                );
-              }
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PetSanctuaryScreen()),
+              );
             },
             child: Container(
               height: 140,
@@ -655,10 +711,10 @@ class HomeDashboardScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFFFE3E8), width: 1.2),
+                border: Border.all(color: theme.softAccentColor, width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryRose.withOpacity(0.06),
+                    color: theme.primaryColor.withOpacity(0.06),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -674,14 +730,14 @@ class HomeDashboardScreen extends StatelessWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: AppTheme.textDark,
+                      color: Color(0xFF2B2B2B),
                     ),
                   ),
                   Text(
                     'Nivel ${couple.petLevel}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppTheme.primaryRose,
+                      color: theme.primaryColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -690,15 +746,15 @@ class HomeDashboardScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
                       value: (couple.petXp % 100) / 100.0,
-                      backgroundColor: AppTheme.softPink,
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryRose),
+                      backgroundColor: theme.softAccentColor,
+                      valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
                       minHeight: 6,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    '(Toca para acariciar)',
-                    style: TextStyle(fontSize: 9, color: AppTheme.primaryRose),
+                  Text(
+                    'Toca para cuidar 🍖',
+                    style: TextStyle(fontSize: 9, color: theme.primaryColor, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -709,16 +765,16 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDailySparkBanner(BuildContext context, CoupleProvider couple) {
+  Widget _buildDailySparkBanner(BuildContext context, CoupleProvider couple, ThemeProvider theme) {
     final todayQ = couple.todayQuestion;
     final isAnswered = todayQ?['user_answered'] ?? false;
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppTheme.softPink.withOpacity(0.5),
+        color: theme.softAccentColor.withOpacity(0.5),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppTheme.primaryRose.withOpacity(0.3)),
+        border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -735,29 +791,29 @@ class HomeDashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Pregunta del Día',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: AppTheme.deepWine,
+                    color: theme.secondaryColor,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   isAnswered ? '¡Ya respondiste hoy! Revisa lo que dijo tu pareja.' : 'Descubre qué piensa tu pareja hoy.',
-                  style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.primaryRose),
+          Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.primaryColor),
         ],
       ),
     );
   }
 
-  Widget _buildWidgetsStudioBanner(BuildContext context) {
+  Widget _buildWidgetsStudioBanner(BuildContext context, ThemeProvider theme) {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -769,10 +825,10 @@ class HomeDashboardScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFFFE3E8), width: 1.2),
+          border: Border.all(color: theme.softAccentColor, width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryRose.withOpacity(0.06),
+              color: theme.primaryColor.withOpacity(0.06),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -782,87 +838,35 @@ class HomeDashboardScreen extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: AppTheme.softPink,
+              decoration: BoxDecoration(
+                color: theme.softAccentColor,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.widgets_rounded, color: AppTheme.primaryRose, size: 22),
+              child: Icon(Icons.widgets_rounded, color: theme.primaryColor, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Widgets de Pantalla de Inicio 📱',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: AppTheme.deepWine,
+                      color: theme.secondaryColor,
                     ),
                   ),
-                  SizedBox(height: 2),
-                  Text(
+                  const SizedBox(height: 2),
+                  const Text(
                     'Ver vistas previas y cómo agregarlos a tu celular.',
-                    style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.primaryRose),
+            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.primaryColor),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeartbeatCelebrationOverlay(String sender) {
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: Container(
-          color: Colors.black.withOpacity(0.2),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.favorite_rounded,
-                  color: AppTheme.primaryRose,
-                  size: 100,
-                )
-                    .animate(onPlay: (c) => c.repeat())
-                    .scale(
-                      begin: const Offset(0.8, 0.8),
-                      end: const Offset(1.3, 1.3),
-                      duration: 500.ms,
-                      curve: Curves.easeInOut,
-                    )
-                    .then()
-                    .scale(
-                      begin: const Offset(1.3, 1.3),
-                      end: const Offset(0.8, 0.8),
-                      duration: 500.ms,
-                    ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
-                  ),
-                  child: Text(
-                    '💓 ¡Latido de $sender! 💓',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.deepWine,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
