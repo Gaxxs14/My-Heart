@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -692,6 +693,8 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
+  static final Map<String, Uint8List> _avatarBytesCache = {};
+
   Widget _buildAvatar({
     required String name,
     String? avatarUrl,
@@ -701,17 +704,50 @@ class HomeDashboardScreen extends StatelessWidget {
     bool isOnline = false,
     required ThemeProvider theme,
   }) {
-    ImageProvider? imgProvider;
+    Widget? imageContent;
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       if (avatarUrl.startsWith('data:image')) {
-        try {
-          final b64 = avatarUrl.split(',').last;
-          imgProvider = MemoryImage(base64Decode(b64));
-        } catch (_) {}
+        Uint8List? bytes = _avatarBytesCache[avatarUrl];
+        if (bytes == null) {
+          try {
+            final b64 = avatarUrl.split(',').last;
+            bytes = base64Decode(b64);
+            _avatarBytesCache[avatarUrl] = bytes;
+          } catch (_) {}
+        }
+        if (bytes != null) {
+          imageContent = ClipOval(
+            child: Image.memory(
+              bytes,
+              width: 70,
+              height: 70,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+          );
+        }
       } else if (avatarUrl.startsWith('http')) {
-        imgProvider = NetworkImage(avatarUrl);
+        imageContent = ClipOval(
+          child: Image.network(
+            avatarUrl,
+            width: 70,
+            height: 70,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => _buildAvatarFallback(name, isMe, theme),
+          ),
+        );
       } else if (avatarUrl.startsWith('/')) {
-        imgProvider = FileImage(File(avatarUrl));
+        imageContent = ClipOval(
+          child: Image.file(
+            File(avatarUrl),
+            width: 70,
+            height: 70,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => _buildAvatarFallback(name, isMe, theme),
+          ),
+        );
       }
     }
 
@@ -748,12 +784,6 @@ class HomeDashboardScreen extends StatelessWidget {
                   height: 70,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: isMe ? theme.mainGradient : LinearGradient(
-                      colors: [theme.secondaryColor, theme.secondaryColor.withOpacity(0.7)],
-                    ),
-                    image: imgProvider != null
-                        ? DecorationImage(image: imgProvider, fit: BoxFit.cover)
-                        : null,
                     boxShadow: [
                       BoxShadow(
                         color: (isMe ? theme.primaryColor : theme.secondaryColor).withOpacity(0.28),
@@ -762,14 +792,7 @@ class HomeDashboardScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: imgProvider == null
-                      ? Center(
-                          child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : '♥',
-                            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
-                          ),
-                        )
-                      : null,
+                  child: imageContent ?? _buildAvatarFallback(name, isMe, theme),
                 ),
               ),
             ),
@@ -834,6 +857,27 @@ class HomeDashboardScreen extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildAvatarFallback(String name, bool isMe, ThemeProvider theme) {
+    return Container(
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: isMe
+            ? theme.mainGradient
+            : LinearGradient(
+                colors: [theme.secondaryColor, theme.secondaryColor.withOpacity(0.7)],
+              ),
+      ),
+      child: Center(
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : '♥',
+          style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+        ),
+      ),
     );
   }
 
