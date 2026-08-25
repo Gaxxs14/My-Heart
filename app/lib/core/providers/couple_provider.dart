@@ -877,14 +877,19 @@ class CoupleProvider extends ChangeNotifier {
   }
 
   // Daily Sparks
-  Future<void> loadTodayQuestion({bool random = false}) async {
+  Future<void> loadTodayQuestion({bool random = false, String? questionId}) async {
     if (_coupleData?['id'] == 'demo-couple-1') return;
 
     _isLoadingQuestion = true;
     notifyListeners();
 
     try {
-      final endpoint = random ? '/questions/today?random=true' : '/questions/today';
+      String endpoint = '/questions/today';
+      if (questionId != null) {
+        endpoint = '/questions/today?question_id=$questionId';
+      } else if (random) {
+        endpoint = '/questions/today?random=true';
+      }
       final res = await _apiService.get(endpoint);
       _todayQuestion = res;
     } catch (e) {

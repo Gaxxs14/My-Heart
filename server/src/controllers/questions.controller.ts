@@ -13,21 +13,48 @@ export const getTodayQuestion = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Debes estar vinculado a una pareja para acceder a las preguntas.' });
     }
 
+    const specificQuestionId = req.query.question_id as string | undefined;
     const isRandom = req.query.random === 'true';
     const coupleRes = await pool.query('SELECT current_question_id, created_at FROM couples WHERE id = $1', [coupleId]);
     const currentQuestionId = coupleRes.rows[0]?.current_question_id;
 
     let question;
-    if (isRandom) {
+
+    if (specificQuestionId) {
+      const qRes = await pool.query('SELECT * FROM daily_questions WHERE id = $1', [specificQuestionId]);
+      if (qRes.rows.length > 0) {
+        question = qRes.rows[0];
+        await pool.query('UPDATE couples SET current_question_id = $1 WHERE id = $2', [question.id, coupleId]);
+      }
+    } else if (isRandom) {
       const randomRes = await pool.query('SELECT * FROM daily_questions ORDER BY RANDOM() LIMIT 1');
       question = randomRes.rows[0];
       if (question) {
         await pool.query('UPDATE couples SET current_question_id = $1 WHERE id = $2', [question.id, coupleId]);
       }
-    } else if (currentQuestionId) {
-      const qRes = await pool.query('SELECT * FROM daily_questions WHERE id = $1', [currentQuestionId]);
-      if (qRes.rows.length > 0) {
-        question = qRes.rows[0];
+    } else {
+      // 1. First check if there is a pending question where partner answered but user hasn't
+      const pendingRes = await pool.query(
+        `SELECT q.*
+         FROM daily_answers a
+         JOIN daily_questions q ON a.question_id = q.id
+         WHERE a.couple_id = $1 AND a.user_id != $2
+           AND NOT EXISTS (
+             SELECT 1 FROM daily_answers a2 WHERE a2.couple_id = $1 AND a2.question_id = q.id AND a2.user_id = $2
+           )
+         ORDER BY a.answered_at ASC
+         LIMIT 1`,
+        [coupleId, userId]
+      );
+
+      if (pendingRes.rows.length > 0) {
+        question = pendingRes.rows[0];
+        await pool.query('UPDATE couples SET current_question_id = $1 WHERE id = $2', [question.id, coupleId]);
+      } else if (currentQuestionId) {
+        const qRes = await pool.query('SELECT * FROM daily_questions WHERE id = $1', [currentQuestionId]);
+        if (qRes.rows.length > 0) {
+          question = qRes.rows[0];
+        }
       }
     }
 
@@ -140,7 +167,11 @@ export const getAnswerHistory = async (req: AuthRequest, res: Response) => {
       `SELECT DISTINCT ON (q.id) q.id as question_id, q.question_text, q.category, q.emoji,
               (SELECT answer_text FROM daily_answers WHERE couple_id = $1 AND question_id = q.id AND user_id = $2) as my_answer,
               (SELECT answered_at FROM daily_answers WHERE couple_id = $1 AND question_id = q.id AND user_id = $2) as my_answered_at,
-              (SELECT answer_text FROM daily_answers WHERE couple_id = $1 AND question_id = q.id AND user_id != $2) as partner_answer,
+              CASE
+                WHEN (SELECT answer_text FROM daily_answers WHERE couple_id = $1 AND question_id = q.id AND user_id = $2) IS NULL THEN NULL
+                ELSE (SELECT answer_text FROM daily_answers WHERE couple_id = $1 AND question_id = q.id AND user_id != $2)
+              END as partner_answer,
+              ((SELECT answer_text FROM daily_answers WHERE couple_id = $1 AND question_id = q.id AND user_id != $2) IS NOT NULL) as partner_has_answered,
               (SELECT answered_at FROM daily_answers WHERE couple_id = $1 AND question_id = q.id AND user_id != $2) as partner_answered_at
        FROM daily_answers a
        JOIN daily_questions q ON a.question_id = q.id

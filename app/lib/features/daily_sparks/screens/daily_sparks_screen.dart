@@ -526,13 +526,19 @@ class _DailySparksScreenState extends State<DailySparksScreen> {
                               final item = history[index];
                               final myAns = item['my_answer'];
                               final partnerAns = item['partner_answer'];
+                              final partnerHasAns = item['partner_has_answered'] == true || partnerAns != null;
 
                               return Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFFF9FA),
                                   borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: const Color(0xFFFFE0E8)),
+                                  border: Border.all(
+                                    color: myAns == null && partnerHasAns
+                                        ? AppTheme.primaryRose.withOpacity(0.5)
+                                        : const Color(0xFFFFE0E8),
+                                    width: myAns == null && partnerHasAns ? 1.5 : 1,
+                                  ),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,7 +567,7 @@ class _DailySparksScreenState extends State<DailySparksScreen> {
                                         const Text('Tú: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryRose)),
                                         Expanded(
                                           child: Text(
-                                            myAns ?? '(Sin responder)',
+                                            myAns ?? '(Sin responder aún)',
                                             style: TextStyle(
                                               fontSize: 13,
                                               color: myAns != null ? AppTheme.textDark : Colors.grey,
@@ -579,16 +585,45 @@ class _DailySparksScreenState extends State<DailySparksScreen> {
                                         const Text('Pareja: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF880E4F))),
                                         Expanded(
                                           child: Text(
-                                            partnerAns ?? '(Sin responder aún)',
+                                            partnerAns != null
+                                                ? partnerAns
+                                                : (partnerHasAns
+                                                    ? '🔒 Ya respondió (Desbloquear respondiendo)'
+                                                    : '(Sin responder aún)'),
                                             style: TextStyle(
                                               fontSize: 13,
-                                              color: partnerAns != null ? AppTheme.textDark : Colors.grey,
+                                              color: partnerAns != null
+                                                  ? AppTheme.textDark
+                                                  : (partnerHasAns ? AppTheme.primaryRose : Colors.grey),
+                                              fontWeight: partnerHasAns && partnerAns == null ? FontWeight.w600 : FontWeight.normal,
                                               fontStyle: partnerAns != null ? FontStyle.normal : FontStyle.italic,
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
+                                    if (myAns == null) ...[
+                                      const SizedBox(height: 12),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppTheme.primaryRose,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                          ),
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            couple.loadTodayQuestion(questionId: item['question_id']);
+                                          },
+                                          icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
+                                          label: const Text(
+                                            '✍️ Responder esta pregunta',
+                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               );
