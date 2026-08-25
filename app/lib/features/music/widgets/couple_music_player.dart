@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_provider.dart';
@@ -51,214 +52,11 @@ class CoupleMusicPlayer extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final isPlaying = couple.isSongPlaying;
-            final lyrics = couple.loveSongLyrics.isNotEmpty
-                ? couple.loveSongLyrics
-                : 'No has agregado la letra en español de esta canción.\n\nToca el botón "Editar Canción" para agregarla o traducirla 🎶';
-
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.82,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Column(
-                children: [
-                  // Top Handle
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Header with Song Info & Rotating Disc
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          couple.togglePlaySong();
-                          setModalState(() {});
-                        },
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Container(
-                              width: 58,
-                              height: 58,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFF1E1E24),
-                                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6)],
-                              ),
-                              child: Center(
-                                child: Container(
-                                  width: 22,
-                                  height: 22,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppTheme.primaryRose,
-                                  ),
-                                  child: const Center(
-                                    child: Icon(Icons.favorite, color: Colors.white, size: 12),
-                                  ),
-                                ),
-                              ),
-                            ).animate(
-                              target: isPlaying ? 1 : 0,
-                              onPlay: (c) => isPlaying ? c.repeat() : null,
-                            ).rotate(duration: 3000.ms),
-                            Icon(
-                              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              couple.loveSongTitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppTheme.deepWine),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              couple.loveSongArtist,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_rounded, color: AppTheme.primaryRose),
-                        tooltip: 'Editar o cambiar canción',
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _showChangeSongDialog(context, couple);
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 8),
-
-                  // Lyrics Header Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.softPink,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.translate_rounded, size: 14, color: AppTheme.primaryRose),
-                        SizedBox(width: 6),
-                        Text(
-                          'Letra Traducida al Español 🇪🇸💖',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryRose),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Scrollable Lyrics View
-                  Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF9FA),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFFFE0E8)),
-                      ),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          lyrics,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            height: 1.8,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF333333),
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Main In-App Play/Pause Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryRose,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: () {
-                        couple.togglePlaySong();
-                        setModalState(() {});
-                      },
-                      icon: Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
-                      label: Text(
-                        isPlaying ? 'Pausar Reproducción ⏸️' : 'Reproducir Música en la App 🎶▶️',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-
-                  // Optional external YouTube button
-                  if (couple.loveSongUrl != null &&
-                      (couple.loveSongUrl!.contains('youtube.com') ||
-                          couple.loveSongUrl!.contains('youtu.be'))) ...[
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 40,
-                      child: TextButton.icon(
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFFFF0000),
-                        ),
-                        onPressed: () async {
-                          try {
-                            final uri = Uri.parse(couple.loveSongUrl!);
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                            }
-                          } catch (_) {}
-                        },
-                        icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
-                        label: const Text('Ver videoclip en YouTube', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (ctx) => CoupleLyricsModal(
+        couple: couple,
+        theme: theme,
+        onChangeSong: () => _showChangeSongDialog(context, couple),
+      ),
     );
   }
 
@@ -612,6 +410,283 @@ class CoupleMusicPlayer extends StatelessWidget {
             tooltip: 'Cambiar o subir canción',
             onPressed: () => _showChangeSongDialog(context, couple),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class CoupleLyricsModal extends StatefulWidget {
+  final CoupleProvider couple;
+  final ThemeProvider theme;
+  final VoidCallback onChangeSong;
+
+  const CoupleLyricsModal({
+    super.key,
+    required this.couple,
+    required this.theme,
+    required this.onChangeSong,
+  });
+
+  @override
+  State<CoupleLyricsModal> createState() => _CoupleLyricsModalState();
+}
+
+class _CoupleLyricsModalState extends State<CoupleLyricsModal> {
+  YoutubePlayerController? _ytController;
+
+  @override
+  void initState() {
+    super.initState();
+    final url = widget.couple.loveSongUrl;
+    if (url != null && (url.contains('youtube.com') || url.contains('youtu.be'))) {
+      final videoId = YoutubePlayer.convertUrlToId(url);
+      if (videoId != null && videoId.isNotEmpty) {
+        _ytController = YoutubePlayerController(
+          initialVideoId: videoId,
+          flags: const YoutubePlayerFlags(
+            autoPlay: true,
+            mute: false,
+            disableDragSeek: false,
+            loop: true,
+            isLive: false,
+            forceHD: false,
+            enableCaption: false,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ytController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final couple = widget.couple;
+    final isPlaying = couple.isSongPlaying;
+    final lyrics = couple.loveSongLyrics.isNotEmpty
+        ? couple.loveSongLyrics
+        : 'No has agregado la letra en español de esta canción.\n\nToca el botón "Editar Canción" para agregarla o traducirla 🎶';
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.88,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        children: [
+          // Top Handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Embedded YouTube Player OR Vinyl Player Header
+          if (_ytController != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: YoutubePlayer(
+                controller: _ytController!,
+                showVideoProgressIndicator: true,
+                progressIndicatorColor: AppTheme.primaryRose,
+                progressColors: const ProgressBarColors(
+                  playedColor: AppTheme.primaryRose,
+                  handleColor: AppTheme.deepWine,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        couple.loveSongTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.deepWine),
+                      ),
+                      Text(
+                        couple.loveSongArtist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.onChangeSong();
+                  },
+                  icon: const Icon(Icons.edit_rounded, size: 16, color: AppTheme.primaryRose),
+                  label: const Text('Editar', style: TextStyle(fontSize: 12, color: AppTheme.primaryRose, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    couple.togglePlaySong();
+                    setState(() {});
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 58,
+                        height: 58,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFF1E1E24),
+                          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6)],
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppTheme.primaryRose,
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.favorite, color: Colors.white, size: 12),
+                            ),
+                          ),
+                        ),
+                      ).animate(
+                        target: isPlaying ? 1 : 0,
+                        onPlay: (c) => isPlaying ? c.repeat() : null,
+                      ).rotate(duration: 3000.ms),
+                      Icon(
+                        isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        couple.loveSongTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppTheme.deepWine),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        couple.loveSongArtist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_rounded, color: AppTheme.primaryRose),
+                  tooltip: 'Editar o cambiar canción',
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.onChangeSong();
+                  },
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 10),
+
+          // Lyrics Header Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppTheme.softPink,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.translate_rounded, size: 14, color: AppTheme.primaryRose),
+                SizedBox(width: 6),
+                Text(
+                  'Letra Traducida al Español 🇪🇸💖',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryRose),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Scrollable Lyrics View
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF9FA),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFFFE0E8)),
+              ),
+              child: SingleChildScrollView(
+                child: Text(
+                  lyrics,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.8,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF333333),
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // In-App audio control button if not YouTube
+          if (_ytController == null)
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryRose,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () {
+                  couple.togglePlaySong();
+                  setState(() {});
+                },
+                icon: Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
+                label: Text(
+                  isPlaying ? 'Pausar Reproducción ⏸️' : 'Reproducir Canción 🎶▶️',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
         ],
       ),
     );

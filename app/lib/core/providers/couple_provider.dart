@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../services/notification_service.dart';
@@ -359,36 +359,12 @@ class CoupleProvider extends ChangeNotifier {
 
       try {
         final url = loveSongUrl;
-        String? playbackUrl = url;
 
-        // Extract YouTube direct audio stream to play in-app
-        if (url != null && (url.contains('youtube.com') || url.contains('youtu.be'))) {
-          final yt = YoutubeExplode();
-          try {
-            final videoId = VideoId(url);
-            final manifest = await yt.videos.streamsClient.getManifest(videoId);
-            final audioStream = manifest.audioOnly.withHighestBitrate();
-            playbackUrl = audioStream.url.toString();
-          } catch (ytErr) {
-            debugPrint('Error extracting YouTube stream: $ytErr');
-          } finally {
-            yt.close();
-          }
-        } else if (url != null && url.contains('spotify.com')) {
-          final uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-          _isSongPlaying = false;
-          notifyListeners();
-          return;
-        }
-
-        if (playbackUrl != null && playbackUrl.isNotEmpty) {
-          if (playbackUrl.startsWith('http://') || playbackUrl.startsWith('https://')) {
-            await _audioPlayer?.play(UrlSource(playbackUrl));
+        if (url != null && url.isNotEmpty && !url.contains('youtube.com') && !url.contains('youtu.be')) {
+          if (url.startsWith('http://') || url.startsWith('https://')) {
+            await _audioPlayer?.play(UrlSource(url));
           } else {
-            await _audioPlayer?.play(DeviceFileSource(playbackUrl));
+            await _audioPlayer?.play(DeviceFileSource(url));
           }
         } else {
           // Romantic piano melody stream fallback

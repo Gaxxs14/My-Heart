@@ -6,12 +6,10 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:my_heart/main.dart';
 
 void main() {
   testWidgets('MyHeartApp smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
     await tester.pumpWidget(const MyHeartApp());
     expect(find.byType(MyHeartApp), findsOneWidget);
   });

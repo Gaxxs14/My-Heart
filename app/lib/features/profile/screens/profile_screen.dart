@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -77,9 +77,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _favSongLyricsController.text = auth.currentUser?['favorite_song_lyrics'] ?? '';
   }
 
-  AudioPlayer? _audioPlayer;
-  bool _isPlaying = false;
-
   @override
   void dispose() {
     _nicknameController.dispose();
@@ -88,63 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _favSongArtistController.dispose();
     _favSongUrlController.dispose();
     _favSongLyricsController.dispose();
-    _audioPlayer?.dispose();
     super.dispose();
-  }
-
-  Future<void> _togglePlayInApp(String? url, {VoidCallback? onStateChange}) async {
-    _audioPlayer ??= AudioPlayer();
-
-    if (_isPlaying) {
-      await _audioPlayer?.pause();
-      if (mounted) {
-        setState(() => _isPlaying = false);
-      }
-      onStateChange?.call();
-      return;
-    }
-
-    if (url == null || url.isEmpty) return;
-
-    if (mounted) {
-      setState(() => _isPlaying = true);
-    }
-    onStateChange?.call();
-
-    try {
-      String playbackUrl = url;
-      if (url.contains('youtube.com') || url.contains('youtu.be')) {
-        final yt = YoutubeExplode();
-        try {
-          final videoId = VideoId(url);
-          final manifest = await yt.videos.streamsClient.getManifest(videoId);
-          final audioStream = manifest.audioOnly.withHighestBitrate();
-          playbackUrl = audioStream.url.toString();
-        } catch (e) {
-          debugPrint('Error extracting YouTube: $e');
-        } finally {
-          yt.close();
-        }
-      }
-
-      if (playbackUrl.startsWith('http://') || playbackUrl.startsWith('https://')) {
-        await _audioPlayer?.play(UrlSource(playbackUrl));
-      } else {
-        await _audioPlayer?.play(DeviceFileSource(playbackUrl));
-      }
-
-      _audioPlayer?.onPlayerComplete.listen((_) {
-        if (mounted) {
-          setState(() => _isPlaying = false);
-          onStateChange?.call();
-        }
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isPlaying = false);
-        onStateChange?.call();
-      }
-    }
   }
 
   Future<void> _pickAvatar() async {
@@ -901,149 +842,279 @@ class _ProfileScreenState extends State<ProfileScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.78,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Column(
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
+      builder: (ctx) => PersonalLyricsModal(
+        title: title,
+        artist: artist,
+        lyrics: lyrics,
+        audioUrl: audioUrl,
+      ),
+    );
+  }
+}
+
+class PersonalLyricsModal extends StatefulWidget {
+  final String title;
+  final String artist;
+  final String lyrics;
+  final String? audioUrl;
+
+  const PersonalLyricsModal({
+    super.key,
+    required this.title,
+    required this.artist,
+    required this.lyrics,
+    this.audioUrl,
+  });
+
+  @override
+  State<PersonalLyricsModal> createState() => _PersonalLyricsModalState();
+}
+
+class _PersonalLyricsModalState extends State<PersonalLyricsModal> {
+  YoutubePlayerController? _ytController;
+  AudioPlayer? _audioPlayer;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final url = widget.audioUrl;
+    if (url != null && (url.contains('youtube.com') || url.contains('youtu.be'))) {
+      final videoId = YoutubePlayer.convertUrlToId(url);
+      if (videoId != null && videoId.isNotEmpty) {
+        _ytController = YoutubePlayerController(
+          initialVideoId: videoId,
+          flags: const YoutubePlayerFlags(
+            autoPlay: true,
+            mute: false,
+            disableDragSeek: false,
+            loop: true,
+            isLive: false,
+            forceHD: false,
+            enableCaption: false,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ytController?.dispose();
+    _audioPlayer?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _toggleAudio() async {
+    final url = widget.audioUrl;
+    if (url == null || url.isEmpty) return;
+
+    _audioPlayer ??= AudioPlayer();
+
+    if (_isPlaying) {
+      await _audioPlayer?.pause();
+      if (mounted) setState(() => _isPlaying = false);
+      return;
+    }
+
+    if (mounted) setState(() => _isPlaying = true);
+
+    try {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        await _audioPlayer?.play(UrlSource(url));
+      } else {
+        await _audioPlayer?.play(DeviceFileSource(url));
+      }
+
+      _audioPlayer?.onPlayerComplete.listen((_) {
+        if (mounted) setState(() => _isPlaying = false);
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isPlaying = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.88,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        children: [
+          // Top Handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Embedded YouTube Player OR Vinyl Player Header
+          if (_ytController != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: YoutubePlayer(
+                controller: _ytController!,
+                showVideoProgressIndicator: true,
+                progressIndicatorColor: AppTheme.primaryRose,
+                progressColors: const ProgressBarColors(
+                  playedColor: AppTheme.primaryRose,
+                  handleColor: AppTheme.deepWine,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.primaryRose,
-                        ),
-                        child: const Icon(Icons.music_note_rounded, color: Colors.white, size: 28),
+                      Text(
+                        widget.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.deepWine),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppTheme.deepWine),
-                            ),
-                            Text(
-                              artist,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
-                            ),
-                          ],
-                        ),
+                      Text(
+                        widget.artist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.softPink,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.translate_rounded, size: 14, color: AppTheme.primaryRose),
-                        SizedBox(width: 6),
-                        Text(
-                          'Letra Traducida al Español 🇪🇸💖',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryRose),
-                        ),
-                      ],
-                    ),
+                ),
+              ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primaryRose,
                   ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF9FA),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFFFE0E8)),
+                  child: const Icon(Icons.music_note_rounded, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppTheme.deepWine),
                       ),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          lyrics.isNotEmpty ? lyrics : 'No se ha proporcionado la letra en español.',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            height: 1.8,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
+                      Text(
+                        widget.artist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 14),
-                  if (audioUrl != null && audioUrl.isNotEmpty) ...[
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryRose,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: () {
-                          _togglePlayInApp(audioUrl, onStateChange: () {
-                            setModalState(() {});
-                          });
-                        },
-                        icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
-                        label: Text(
-                          _isPlaying ? 'Pausar Reproducción ⏸️' : 'Reproducir Música en la App 🎶▶️',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  SizedBox(
-                    width: double.infinity,
-                    height: 44,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryRose,
-                        side: const BorderSide(color: AppTheme.primaryRose),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: () {
-                        if (_isPlaying) {
-                          _togglePlayInApp(audioUrl);
-                        }
-                        Navigator.pop(ctx);
-                      },
-                      child: const Text('Cerrar Letra 💕', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 10),
+
+          // Lyrics Header Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppTheme.softPink,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.translate_rounded, size: 14, color: AppTheme.primaryRose),
+                SizedBox(width: 6),
+                Text(
+                  'Letra Traducida al Español 🇪🇸💖',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryRose),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Scrollable Lyrics View
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF9FA),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFFFE0E8)),
               ),
-            );
-          },
-        );
-      },
+              child: SingleChildScrollView(
+                child: Text(
+                  widget.lyrics.isNotEmpty ? widget.lyrics : 'No se ha proporcionado la letra en español.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.8,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // In-App audio control button if direct audio URL (not YouTube)
+          if (_ytController == null && widget.audioUrl != null && widget.audioUrl!.isNotEmpty) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryRose,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: _toggleAudio,
+                icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
+                label: Text(
+                  _isPlaying ? 'Pausar Reproducción ⏸️' : 'Reproducir Canción 🎶▶️',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primaryRose,
+                side: const BorderSide(color: AppTheme.primaryRose),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar Letra 💕', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
