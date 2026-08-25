@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../services/notification_service.dart';
@@ -352,10 +353,22 @@ class CoupleProvider extends ChangeNotifier {
       _isSongPlaying = false;
       notifyListeners();
     } else {
+      final url = loveSongUrl;
+
+      // Handle YouTube / Spotify external links
+      if (url != null && (url.contains('youtube.com') || url.contains('youtu.be') || url.contains('spotify.com'))) {
+        try {
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        } catch (_) {}
+        return;
+      }
+
       _isSongPlaying = true;
       notifyListeners();
       try {
-        final url = loveSongUrl;
         if (url != null && url.isNotEmpty) {
           if (url.startsWith('http://') || url.startsWith('https://')) {
             await _audioPlayer?.play(UrlSource(url));

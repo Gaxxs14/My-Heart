@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -422,6 +423,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _favSongTitleController.text.isNotEmpty ? _favSongTitleController.text : 'Mi Canción Favorita',
                         _favSongArtistController.text.isNotEmpty ? _favSongArtistController.text : userName,
                         _favSongLyricsController.text,
+                        audioUrl: _favSongUrlController.text.isNotEmpty ? _favSongUrlController.text : null,
                       ),
                       icon: const Icon(Icons.lyrics_rounded, size: 16, color: AppTheme.primaryRose),
                       label: const Text('Ver Letra 📜', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryRose)),
@@ -677,6 +679,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             auth.partnerUser!['favorite_song_title'] ?? 'Canción Favorita',
                             auth.partnerUser!['favorite_song_artist'] ?? partnerName,
                             auth.partnerUser!['favorite_song_lyrics'] ?? 'Tu pareja aún no ha colocado la letra en español.',
+                            audioUrl: auth.partnerUser!['favorite_song_url'],
                           );
                         },
                         icon: const Icon(Icons.lyrics_rounded, size: 16, color: Colors.white),
@@ -829,7 +832,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showLyricsModal(BuildContext context, String title, String artist, String lyrics) {
+  void _showLyricsModal(BuildContext context, String title, String artist, String lyrics, {String? audioUrl}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -838,8 +841,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (ctx) {
+        final isExternal = audioUrl != null &&
+            (audioUrl.contains('youtube.com') || audioUrl.contains('youtu.be') || audioUrl.contains('spotify.com'));
+
         return Container(
-          height: MediaQuery.of(context).size.height * 0.75,
+          height: MediaQuery.of(context).size.height * 0.78,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             children: [
@@ -931,16 +937,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+              if (isExternal) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: audioUrl.contains('spotify.com') ? const Color(0xFF1DB954) : const Color(0xFFFF0000),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: () async {
+                      try {
+                        final uri = Uri.parse(audioUrl);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
+                      } catch (_) {}
+                    },
+                    icon: Icon(
+                      audioUrl.contains('spotify.com') ? Icons.music_note_rounded : Icons.play_circle_fill_rounded,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      audioUrl.contains('spotify.com') ? 'Abrir y Escuchar en Spotify 🟢' : 'Abrir y Escuchar en YouTube 🔴',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               SizedBox(
                 width: double.infinity,
                 height: 46,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryRose,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primaryRose,
+                    side: const BorderSide(color: AppTheme.primaryRose),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cerrar Letra 💕', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text('Cerrar Letra 💕', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
