@@ -7,6 +7,20 @@ import '../../../core/theme/theme_provider.dart';
 class CoupleCalendarScreen extends StatelessWidget {
   const CoupleCalendarScreen({super.key});
 
+  DateTime _parseDate(dynamic raw) {
+    if (raw == null) return DateTime.now();
+    if (raw is DateTime) return raw;
+    final str = raw.toString();
+    return DateTime.tryParse(str) ?? DateTime.now();
+  }
+
+  int _calculateDiffDays(DateTime targetDate) {
+    final now = DateTime.now();
+    final target = DateTime(targetDate.year, targetDate.month, targetDate.day);
+    final today = DateTime(now.year, now.month, now.day);
+    return target.difference(today).inDays;
+  }
+
   void _showAddEventDialog(BuildContext context) {
     final titleController = TextEditingController();
     DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
@@ -82,8 +96,8 @@ class CoupleCalendarScreen extends StatelessWidget {
                       final picked = await showDatePicker(
                         context: context,
                         initialDate: selectedDate,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2040),
                       );
                       if (picked != null) {
                         setModalState(() => selectedDate = picked);
@@ -99,7 +113,10 @@ class CoupleCalendarScreen extends StatelessWidget {
                         children: [
                           const Icon(Icons.calendar_month_rounded, color: Color(0xFFFF5E7E)),
                           const SizedBox(width: 10),
-                          Text('Fecha: ${DateFormat('dd MMMM yyyy').format(selectedDate)}'),
+                          Text(
+                            'Fecha: ${DateFormat('dd MMMM yyyy').format(selectedDate)}',
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                          ),
                         ],
                       ),
                     ),
@@ -117,7 +134,7 @@ class CoupleCalendarScreen extends StatelessWidget {
                         final couple = Provider.of<CoupleProvider>(context, listen: false);
                         couple.addCalendarEvent(
                           title: titleController.text.trim(),
-                          date: selectedDate.toIso8601String().split('T').first,
+                          date: DateFormat('yyyy-MM-dd').format(selectedDate),
                           emoji: emoji,
                           type: eventType,
                         );
@@ -136,6 +153,35 @@ class CoupleCalendarScreen extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  void _confirmDeleteEvent(BuildContext context, String eventId, String title) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('¿Eliminar evento?'),
+        content: Text('¿Estás seguro de que deseas eliminar "$title" del calendario?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              final couple = Provider.of<CoupleProvider>(context, listen: false);
+              couple.deleteCalendarEvent(eventId);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Evento eliminado del calendario.')),
+              );
+            },
+            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -201,8 +247,18 @@ class CoupleCalendarScreen extends StatelessWidget {
                       itemCount: events.length,
                       itemBuilder: (context, index) {
                         final e = events[index];
-                        final date = DateTime.tryParse(e['date'] ?? '') ?? DateTime.now();
-                        final diffDays = date.difference(DateTime.now()).inDays + 1;
+                        final rawDate = e['event_date'] ?? e['date'];
+                        final date = _parseDate(rawDate);
+                        final diffDays = _calculateDiffDays(date);
+
+                        String badgeText;
+                        if (diffDays == 0) {
+                          badgeText = '¡Hoy! 🎉';
+                        } else if (diffDays > 0) {
+                          badgeText = 'En $diffDays días';
+                        } else {
+                          badgeText = 'Hace ${-diffDays} días';
+                        }
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -252,17 +308,26 @@ class CoupleCalendarScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: diffDays <= 7 ? theme.primaryColor : theme.softAccentColor,
+                                  color: diffDays >= 0 && diffDays <= 7 ? theme.primaryColor : theme.softAccentColor,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  diffDays <= 0 ? '¡Hoy! 🎉' : 'En $diffDays días',
+                                  badgeText,
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: diffDays <= 7 ? Colors.white : theme.secondaryColor,
+                                    color: diffDays >= 0 && diffDays <= 7 ? Colors.white : theme.secondaryColor,
                                   ),
                                 ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.grey, size: 20),
+                                tooltip: 'Eliminar evento',
+                                onPressed: () {
+                                  if (e['id'] != null) {
+                                    _confirmDeleteEvent(context, e['id'].toString(), e['title'] ?? 'Evento');
+                                  }
+                                },
                               ),
                             ],
                           ),
@@ -277,8 +342,18 @@ class CoupleCalendarScreen extends StatelessWidget {
   }
 
   Widget _buildNextEventCountdown(dynamic event, ThemeProvider theme) {
-    final date = DateTime.tryParse(event['date'] ?? '') ?? DateTime.now();
-    final diffDays = date.difference(DateTime.now()).inDays + 1;
+    final rawDate = event['event_date'] ?? event['date'];
+    final date = _parseDate(rawDate);
+    final diffDays = _calculateDiffDays(date);
+
+    String subText;
+    if (diffDays == 0) {
+      subText = '¡Es hoy! Disfrútenlo al máximo 💕';
+    } else if (diffDays > 0) {
+      subText = 'Faltan $diffDays días para celebrarlo ✨';
+    } else {
+      subText = 'Fue hace ${-diffDays} días 💕';
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -318,7 +393,7 @@ class CoupleCalendarScreen extends StatelessWidget {
                   style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  diffDays <= 0 ? '¡Es hoy! Disfrútenlo al máximo 💕' : 'Faltan $diffDays días para celebrarlo ✨',
+                  subText,
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ],
@@ -329,3 +404,4 @@ class CoupleCalendarScreen extends StatelessWidget {
     );
   }
 }
+

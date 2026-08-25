@@ -506,7 +506,12 @@ class CoupleProvider extends ChangeNotifier {
     if (_coupleData?['id'] == 'demo-couple-1') return;
     try {
       final res = await _apiService.get('/calendar');
-      _events = res['events'] ?? [];
+      final rawEvents = res['events'] as List? ?? [];
+      _events = rawEvents.map((e) {
+        final map = Map<String, dynamic>.from(e);
+        map['date'] = map['event_date'] ?? map['date'];
+        return map;
+      }).toList();
       notifyListeners();
     } catch (e) {
       print('Error cargando calendario: $e');
