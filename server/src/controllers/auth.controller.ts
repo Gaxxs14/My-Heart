@@ -211,8 +211,11 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const result = await pool.query(
       `SELECT u.id, u.email, u.name, u.nickname, u.avatar_url, u.mood_status, u.mood_icon, u.couple_id, u.partner_id,
+              u.favorite_song_title, u.favorite_song_artist, u.favorite_song_url, u.favorite_song_lyrics,
               p.id as partner_user_id, p.name as partner_name, p.nickname as partner_nickname, 
-              p.avatar_url as partner_avatar_url, p.mood_status as partner_mood_status, p.mood_icon as partner_mood_icon, p.is_online as partner_is_online
+              p.avatar_url as partner_avatar_url, p.mood_status as partner_mood_status, p.mood_icon as partner_mood_icon, p.is_online as partner_is_online,
+              p.favorite_song_title as partner_favorite_song_title, p.favorite_song_artist as partner_favorite_song_artist,
+              p.favorite_song_url as partner_favorite_song_url, p.favorite_song_lyrics as partner_favorite_song_lyrics
        FROM users u
        LEFT JOIN users p ON u.partner_id = p.id
        WHERE u.id = $1`,
@@ -231,7 +234,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 };
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
-  const { name, nickname, avatar_url } = req.body;
+  const { name, nickname, avatar_url, favorite_song_title, favorite_song_artist, favorite_song_url, favorite_song_lyrics } = req.body;
   const userId = req.user?.id;
 
   try {
@@ -240,10 +243,15 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
        SET name = COALESCE($1, name),
            nickname = COALESCE($2, nickname),
            avatar_url = COALESCE($3, avatar_url),
+           favorite_song_title = COALESCE($4, favorite_song_title),
+           favorite_song_artist = COALESCE($5, favorite_song_artist),
+           favorite_song_url = COALESCE($6, favorite_song_url),
+           favorite_song_lyrics = COALESCE($7, favorite_song_lyrics),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4
-       RETURNING id, username, email, name, nickname, avatar_url, mood_status, mood_icon, couple_id, partner_id`,
-      [name, nickname, avatar_url, userId]
+       WHERE id = $8
+       RETURNING id, username, email, name, nickname, avatar_url, mood_status, mood_icon, couple_id, partner_id,
+                 favorite_song_title, favorite_song_artist, favorite_song_url, favorite_song_lyrics`,
+      [name, nickname, avatar_url, favorite_song_title, favorite_song_artist, favorite_song_url, favorite_song_lyrics, userId]
     );
 
     return res.json({

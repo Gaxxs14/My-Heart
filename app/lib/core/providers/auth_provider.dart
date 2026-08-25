@@ -30,13 +30,17 @@ class AuthProvider extends ChangeNotifier {
         final res = await _apiService.get('/auth/profile');
         _currentUser = res['profile'];
         _partnerUser = {
-          'id':          res['profile']['partner_user_id'],
-          'name':        res['profile']['partner_name'],
-          'nickname':    res['profile']['partner_nickname'],
-          'avatar_url':  res['profile']['partner_avatar_url'],
-          'mood_status': res['profile']['partner_mood_status'],
-          'mood_icon':   res['profile']['partner_mood_icon'],
-          'is_online':   res['profile']['partner_is_online'],
+          'id':                     res['profile']['partner_user_id'],
+          'name':                   res['profile']['partner_name'],
+          'nickname':               res['profile']['partner_nickname'],
+          'avatar_url':             res['profile']['partner_avatar_url'],
+          'mood_status':            res['profile']['partner_mood_status'],
+          'mood_icon':              res['profile']['partner_mood_icon'],
+          'is_online':              res['profile']['partner_is_online'],
+          'favorite_song_title':    res['profile']['partner_favorite_song_title'],
+          'favorite_song_artist':   res['profile']['partner_favorite_song_artist'],
+          'favorite_song_url':      res['profile']['partner_favorite_song_url'],
+          'favorite_song_lyrics':   res['profile']['partner_favorite_song_lyrics'],
         };
         _isAuthenticated = true;
       } catch (e) {
@@ -177,7 +181,15 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateProfile({String? name, String? nickname, String? avatarUrl}) async {
+  Future<bool> updateProfile({
+    String? name,
+    String? nickname,
+    String? avatarUrl,
+    String? favoriteSongTitle,
+    String? favoriteSongArtist,
+    String? favoriteSongUrl,
+    String? favoriteSongLyrics,
+  }) async {
     _isLoading = true;
     notifyListeners();
 
@@ -186,6 +198,10 @@ class AuthProvider extends ChangeNotifier {
         if (name != null) 'name': name.trim(),
         if (nickname != null) 'nickname': nickname.trim(),
         if (avatarUrl != null) 'avatar_url': avatarUrl,
+        if (favoriteSongTitle != null) 'favorite_song_title': favoriteSongTitle.trim(),
+        if (favoriteSongArtist != null) 'favorite_song_artist': favoriteSongArtist.trim(),
+        if (favoriteSongUrl != null) 'favorite_song_url': favoriteSongUrl.trim(),
+        if (favoriteSongLyrics != null) 'favorite_song_lyrics': favoriteSongLyrics.trim(),
       });
 
       if (res['user'] != null) {

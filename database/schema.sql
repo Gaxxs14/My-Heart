@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS users (
     is_online BOOLEAN DEFAULT false,
     last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     fcm_token TEXT,
+    favorite_song_title VARCHAR(255),
+    favorite_song_artist VARCHAR(255),
+    favorite_song_url TEXT,
+    favorite_song_lyrics TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
