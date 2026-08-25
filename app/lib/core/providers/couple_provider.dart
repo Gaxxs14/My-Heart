@@ -50,6 +50,7 @@ class CoupleProvider extends ChangeNotifier {
   String _loveSongTitle = 'Perfect';
   String _loveSongArtist = 'Ed Sheeran';
   String? _loveSongUrl;
+  String _loveSongLyrics = 'Encontré un amor para mí...\nCariño, simplemente sumérgete y sígueme el paso...\nPorque éramos solo unos niños cuando nos enamoramos,\nsin saber lo que era el amor.\nNo te dejaré ir esta vez.\nBebé, bailando en la oscuridad contigo entre mis brazos,\ndescalzos sobre la hierba, escuchando nuestra canción favorita.\nCuando dijiste que te veías hecha un desastre, yo susurré por lo bajo,\npero lo escuchaste: cariño, te ves perfecta esta noche 💕';
   bool _isSongPlaying = false;
   AudioPlayer? _audioPlayer;
 
@@ -98,6 +99,7 @@ class CoupleProvider extends ChangeNotifier {
   String get loveSongTitle => _coupleData?['love_song_title'] ?? _loveSongTitle;
   String get loveSongArtist => _coupleData?['love_song_artist'] ?? _loveSongArtist;
   String? get loveSongUrl => _coupleData?['love_song_url'] ?? _loveSongUrl;
+  String get loveSongLyrics => _coupleData?['love_song_lyrics'] ?? _loveSongLyrics;
   bool get isSongPlaying => _isSongPlaying;
 
   List<dynamic> get places => _places;
@@ -315,14 +317,17 @@ class CoupleProvider extends ChangeNotifier {
   }
 
   // Music Player Methods
-  Future<void> updateLoveSong(String title, String artist, {String? url}) async {
+  Future<void> updateLoveSong(String title, String artist, {String? url, String? lyrics}) async {
     _loveSongTitle = title;
     _loveSongArtist = artist;
     if (url != null) _loveSongUrl = url;
+    if (lyrics != null) _loveSongLyrics = lyrics;
+
     if (_coupleData != null) {
       _coupleData!['love_song_title'] = title;
       _coupleData!['love_song_artist'] = artist;
       if (url != null) _coupleData!['love_song_url'] = url;
+      if (lyrics != null) _coupleData!['love_song_lyrics'] = lyrics;
     }
     notifyListeners();
 
@@ -331,6 +336,7 @@ class CoupleProvider extends ChangeNotifier {
         'love_song_title': title,
         'love_song_artist': artist,
         'love_song_url': url ?? _loveSongUrl,
+        'love_song_lyrics': lyrics ?? _loveSongLyrics,
       });
       if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
         _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'song');

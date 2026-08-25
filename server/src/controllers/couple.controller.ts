@@ -171,6 +171,7 @@ export const updateCoupleSettings = async (req: AuthRequest, res: Response) => {
     love_song_title,
     love_song_artist,
     love_song_url,
+    love_song_lyrics,
     theme_palette,
   } = req.body;
   const userId = req.user?.id;
@@ -193,9 +194,10 @@ export const updateCoupleSettings = async (req: AuthRequest, res: Response) => {
            love_song_title = COALESCE($6, love_song_title),
            love_song_artist = COALESCE($7, love_song_artist),
            love_song_url = COALESCE($8, love_song_url),
-           theme_palette = COALESCE($9, theme_palette),
+           love_song_lyrics = COALESCE($9, love_song_lyrics),
+           theme_palette = COALESCE($10, theme_palette),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10
+       WHERE id = $11
        RETURNING *`,
       [
         anniversary_date,
@@ -206,6 +208,7 @@ export const updateCoupleSettings = async (req: AuthRequest, res: Response) => {
         love_song_title,
         love_song_artist,
         love_song_url,
+        love_song_lyrics,
         theme_palette,
         coupleId,
       ]
