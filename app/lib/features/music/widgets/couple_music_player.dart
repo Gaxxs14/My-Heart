@@ -297,7 +297,15 @@ class CoupleMusicPlayer extends StatelessWidget {
         children: [
           // Vinyl Record with Rotation Animation
           GestureDetector(
-            onTap: couple.togglePlaySong,
+            onTap: () {
+              final isYt = couple.loveSongUrl != null &&
+                  (couple.loveSongUrl!.contains('youtube.com') || couple.loveSongUrl!.contains('youtu.be'));
+              if (isYt) {
+                _showLyricsModal(context, couple, theme);
+              } else {
+                couple.togglePlaySong();
+              }
+            },
             child: Stack(
               alignment: Alignment.center,
               children: [
