@@ -284,6 +284,9 @@ class CoupleProvider extends ChangeNotifier {
         'pet_type': type,
         'pet_name': name,
       });
+      if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'pet');
+      }
     } catch (_) {}
   }
 
@@ -301,6 +304,9 @@ class CoupleProvider extends ChangeNotifier {
         'pet_xp': _petXp,
         'pet_level': _petLevel,
       });
+      if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'pet');
+      }
     } catch (_) {}
   }
 
@@ -322,6 +328,9 @@ class CoupleProvider extends ChangeNotifier {
         'love_song_artist': artist,
         'love_song_url': url ?? _loveSongUrl,
       });
+      if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'song');
+      }
     } catch (_) {}
   }
 
@@ -360,71 +369,248 @@ class CoupleProvider extends ChangeNotifier {
   }
 
   // Places Methods
-  void addPlace({
+  Future<void> loadPlaces() async {
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+    try {
+      final res = await _apiService.get('/places');
+      _places = res['places'] ?? [];
+      notifyListeners();
+    } catch (e) {
+      print('Error cargando lugares: $e');
+    }
+  }
+
+  Future<bool> addPlace({
     required String name,
     required String city,
     required String category,
     String? note,
-  }) {
-    _places.insert(0, {
-      'id': 'demo-p-${DateTime.now().millisecondsSinceEpoch}',
-      'name': name,
-      'city': city,
-      'category': category,
-      'date': DateTime.now().toIso8601String().split('T').first,
-      'note': note ?? '',
-    });
-    if (_coupleData != null) {
-      _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 25;
+    String? visitDate,
+  }) async {
+    if (_coupleData?['id'] == 'demo-couple-1') {
+      _places.insert(0, {
+        'id': 'demo-p-${DateTime.now().millisecondsSinceEpoch}',
+        'name': name,
+        'city': city,
+        'category': category,
+        'date': visitDate ?? DateTime.now().toIso8601String().split('T').first,
+        'note': note ?? '',
+      });
+      if (_coupleData != null) {
+        _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 25;
+      }
+      notifyListeners();
+      return true;
     }
-    notifyListeners();
+
+    try {
+      await _apiService.post('/places', {
+        'name': name,
+        'city': city,
+        'category': category,
+        'note': note,
+        'visit_date': visitDate,
+      });
+      await loadPlaces();
+      await fetchCoupleStatus();
+      if (_coupleData?['id'] != null) {
+        _socketService.emitDataChanged(
+          coupleId: _coupleData!['id'],
+          type: 'places',
+        );
+      }
+      return true;
+    } catch (e) {
+      print('Error creando lugar romántico: $e');
+      return false;
+    }
   }
 
   // Sticky Notes Methods
-  void addStickyNote({
+  Future<void> loadStickyNotes() async {
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+    try {
+      final res = await _apiService.get('/sticky-notes');
+      _stickyNotes = res['notes'] ?? [];
+      notifyListeners();
+    } catch (e) {
+      print('Error cargando notas: $e');
+    }
+  }
+
+  Future<bool> addStickyNote({
     required String content,
     required String color,
     required String authorName,
-  }) {
-    _stickyNotes.insert(0, {
-      'id': 'demo-n-${DateTime.now().millisecondsSinceEpoch}',
-      'author_name': authorName,
-      'content': content,
-      'color': color,
-      'created_at': DateTime.now().toIso8601String(),
-    });
-    if (_coupleData != null) {
-      _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 10;
+  }) async {
+    if (_coupleData?['id'] == 'demo-couple-1') {
+      _stickyNotes.insert(0, {
+        'id': 'demo-n-${DateTime.now().millisecondsSinceEpoch}',
+        'author_name': authorName,
+        'content': content,
+        'color': color,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      if (_coupleData != null) {
+        _coupleData!['pet_xp'] = (_coupleData!['pet_xp'] as int) + 10;
+      }
+      notifyListeners();
+      return true;
     }
-    notifyListeners();
+
+    try {
+      await _apiService.post('/sticky-notes', {
+        'content': content,
+        'color': color,
+      });
+      await loadStickyNotes();
+      await fetchCoupleStatus();
+      if (_coupleData?['id'] != null) {
+        _socketService.emitDataChanged(
+          coupleId: _coupleData!['id'],
+          type: 'notes',
+        );
+      }
+      return true;
+    } catch (e) {
+      print('Error creando nota: $e');
+      return false;
+    }
   }
 
-  void deleteStickyNote(String id) {
+  Future<void> deleteStickyNote(String id) async {
     _stickyNotes.removeWhere((n) => n['id'] == id);
     notifyListeners();
+
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+
+    try {
+      await _apiService.delete('/sticky-notes/$id');
+      if (_coupleData?['id'] != null) {
+        _socketService.emitDataChanged(
+          coupleId: _coupleData!['id'],
+          type: 'notes',
+        );
+      }
+    } catch (e) {
+      print('Error eliminando nota: $e');
+    }
   }
 
   // Calendar Events Methods
-  void addCalendarEvent({
+  Future<void> loadCalendarEvents() async {
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+    try {
+      final res = await _apiService.get('/calendar');
+      _events = res['events'] ?? [];
+      notifyListeners();
+    } catch (e) {
+      print('Error cargando calendario: $e');
+    }
+  }
+
+  Future<bool> addCalendarEvent({
     required String title,
     required String date,
     required String emoji,
     required String type,
-  }) {
-    _events.add({
-      'id': 'demo-e-${DateTime.now().millisecondsSinceEpoch}',
-      'title': title,
-      'date': date,
-      'emoji': emoji,
-      'type': type,
-    });
-    _events.sort((a, b) => a['date'].toString().compareTo(b['date'].toString()));
-    notifyListeners();
+  }) async {
+    if (_coupleData?['id'] == 'demo-couple-1') {
+      _events.add({
+        'id': 'demo-e-${DateTime.now().millisecondsSinceEpoch}',
+        'title': title,
+        'date': date,
+        'emoji': emoji,
+        'type': type,
+      });
+      _events.sort((a, b) => a['date'].toString().compareTo(b['date'].toString()));
+      notifyListeners();
+      return true;
+    }
+
+    try {
+      await _apiService.post('/calendar', {
+        'title': title,
+        'event_date': date,
+        'emoji': emoji,
+        'event_type': type,
+      });
+      await loadCalendarEvents();
+      if (_coupleData?['id'] != null) {
+        _socketService.emitDataChanged(
+          coupleId: _coupleData!['id'],
+          type: 'calendar',
+        );
+      }
+      return true;
+    } catch (e) {
+      print('Error creando evento de calendario: $e');
+      return false;
+    }
   }
 
-  void deleteCalendarEvent(String id) {
+  Future<void> deleteCalendarEvent(String id) async {
     _events.removeWhere((e) => e['id'] == id);
     notifyListeners();
+
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+
+    try {
+      await _apiService.delete('/calendar/$id');
+      if (_coupleData?['id'] != null) {
+        _socketService.emitDataChanged(
+          coupleId: _coupleData!['id'],
+          type: 'calendar',
+        );
+      }
+    } catch (e) {
+      print('Error eliminando evento: $e');
+    }
+  }
+
+  // Real-time synchronization dispatcher
+  void _handlePartnerRefresh(String? type) {
+    switch (type) {
+      case 'notes':
+        loadStickyNotes();
+        break;
+      case 'calendar':
+        loadCalendarEvents();
+        break;
+      case 'places':
+        loadPlaces();
+        break;
+      case 'memories':
+        loadMemories();
+        fetchCoupleStatus();
+        break;
+      case 'bucket':
+        loadBucketList();
+        fetchCoupleStatus();
+        break;
+      case 'letters':
+        loadLetters();
+        break;
+      case 'question':
+        loadTodayQuestion();
+        fetchCoupleStatus();
+        break;
+      case 'pet':
+      case 'song':
+        fetchCoupleStatus();
+        break;
+      case 'all':
+      default:
+        fetchCoupleStatus();
+        loadTodayQuestion();
+        loadMemories();
+        loadBucketList();
+        loadLetters();
+        loadStickyNotes();
+        loadCalendarEvents();
+        loadPlaces();
+        break;
+    }
   }
 
   // Initialize couple state and real-time sockets
@@ -443,7 +629,7 @@ class CoupleProvider extends ChangeNotifier {
     if (_isPaired && _coupleData != null) {
       _startLoveTicker();
 
-      // Connect WebSockets
+      // Connect WebSockets with full real-time couple synchronization
       _socketService.connect(
         userId: userId,
         coupleId: _coupleData!['id'],
@@ -456,13 +642,19 @@ class CoupleProvider extends ChangeNotifier {
         onPartnerPresence: (data) {
           onPartnerOnline(data['is_online'] ?? false);
         },
+        onPartnerRefresh: (data) {
+          _handlePartnerRefresh(data['type']);
+        },
       );
 
-      // Load initial feature data
+      // Load all feature data from backend
       loadTodayQuestion();
       loadMemories();
       loadBucketList();
       loadLetters();
+      loadStickyNotes();
+      loadCalendarEvents();
+      loadPlaces();
     }
   }
 
@@ -553,6 +745,9 @@ class CoupleProvider extends ChangeNotifier {
       if (res['couple'] != null) {
         _coupleData = res['couple'];
         _startLoveTicker();
+      }
+      if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'all');
       }
       return true;
     } catch (e) {
@@ -677,6 +872,9 @@ class CoupleProvider extends ChangeNotifier {
       // Reload today question to unlock answers
       await loadTodayQuestion();
       await fetchCoupleStatus(); // Updates XP
+      if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'question');
+      }
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -735,6 +933,9 @@ class CoupleProvider extends ChangeNotifier {
       });
       await loadMemories();
       await fetchCoupleStatus();
+      if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'memories');
+      }
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -781,6 +982,9 @@ class CoupleProvider extends ChangeNotifier {
         'description': description ?? '',
       });
       await loadBucketList();
+      if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'bucket');
+      }
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -810,6 +1014,9 @@ class CoupleProvider extends ChangeNotifier {
       });
       await loadBucketList();
       await fetchCoupleStatus();
+      if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'bucket');
+      }
     } catch (e) {
       print('Error alternando bucket item: $e');
     }
@@ -864,6 +1071,9 @@ class CoupleProvider extends ChangeNotifier {
         'unlock_mood': unlockMood,
       });
       await loadLetters();
+      if (_coupleData?['id'] != null && _coupleData?['id'] != 'demo-couple-1') {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'letters');
+      }
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');

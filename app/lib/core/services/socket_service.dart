@@ -22,6 +22,7 @@ class SocketService {
     required Function(Map<String, dynamic>) onHeartbeatReceived,
     required Function(Map<String, dynamic>) onPartnerMoodUpdated,
     required Function(Map<String, dynamic>) onPartnerPresence,
+    Function(Map<String, dynamic>)? onPartnerRefresh,
   }) {
     if (_socket != null && _socket!.connected) return;
 
@@ -59,6 +60,12 @@ class SocketService {
       }
     });
 
+    _socket?.on('partner_refresh', (data) {
+      if (data is Map<String, dynamic> && onPartnerRefresh != null) {
+        onPartnerRefresh(data);
+      }
+    });
+
     _socket?.onDisconnect((_) {
       _isConnected = false;
       print('💔 Socket desconectado');
@@ -93,9 +100,22 @@ class SocketService {
     });
   }
 
+  void emitDataChanged({
+    required String coupleId,
+    required String type,
+    String? senderId,
+  }) {
+    _socket?.emit('couple_data_changed', {
+      'coupleId': coupleId,
+      'type': type,
+      if (senderId != null) 'senderId': senderId,
+    });
+  }
+
   void disconnect() {
     _socket?.disconnect();
     _socket = null;
     _isConnected = false;
   }
 }
+

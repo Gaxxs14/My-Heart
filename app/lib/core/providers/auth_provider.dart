@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/socket_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
+  final SocketService _socketService = SocketService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -210,6 +212,15 @@ class AuthProvider extends ChangeNotifier {
         _currentUser!['mood_status'] = moodStatus;
         _currentUser!['mood_icon']   = moodIcon;
         notifyListeners();
+
+        if (coupleId != null && coupleId != 'demo-couple-1') {
+          _socketService.sendMoodChange(
+            coupleId: coupleId!,
+            userId: _currentUser!['id'] ?? '',
+            moodStatus: moodStatus,
+            moodIcon: moodIcon,
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error al actualizar estado de ánimo: $e');

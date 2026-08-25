@@ -61,6 +61,19 @@ export const setupSocketHandlers = (io: Server) => {
       });
     });
 
+    // Handle real-time couple data changes (memories, bucket, sticky notes, calendar, places, letters, pet, song, etc.)
+    socket.on('couple_data_changed', (data: { coupleId: string; type: string; senderId?: string }) => {
+      const { coupleId, type, senderId } = data;
+      if (coupleId) {
+        socket.to(`couple:${coupleId}`).emit('partner_refresh', {
+          type,
+          senderId,
+          timestamp: new Date().toISOString(),
+        });
+        console.log(`🔄 Sincronización en tiempo real (${type}) enviada a couple:${coupleId}`);
+      }
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
       console.log(`❌ Cliente desconectado: ${socket.id}`);

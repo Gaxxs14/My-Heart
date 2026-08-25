@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS couples (
     pet_xp INT DEFAULT 0,
     love_song_title VARCHAR(255),
     love_song_artist VARCHAR(255),
+    love_song_url TEXT,
     theme_palette VARCHAR(50) DEFAULT 'rose_gold',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -123,7 +124,42 @@ CREATE TABLE IF NOT EXISTS heartbeats (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. SEED INITIAL DAILY QUESTIONS
+-- 9. STICKY NOTES (Post-its de Amor)
+CREATE TABLE IF NOT EXISTS sticky_notes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    couple_id UUID NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    color VARCHAR(30) DEFAULT 'pink',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. COUPLE CALENDAR (Citas & Aniversarios)
+CREATE TABLE IF NOT EXISTS couple_calendar (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    couple_id UUID NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    event_date DATE NOT NULL,
+    emoji VARCHAR(20) DEFAULT '💖',
+    event_type VARCHAR(50) DEFAULT 'date',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. ROMANTIC PLACES (Nuestros Lugares)
+CREATE TABLE IF NOT EXISTS couple_places (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    couple_id UUID NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    city VARCHAR(255),
+    category VARCHAR(50) DEFAULT 'restaurant',
+    note TEXT,
+    visit_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. SEED INITIAL DAILY QUESTIONS
 INSERT INTO daily_questions (question_text, category, emoji, day_number) VALUES
 ('¿Cuál fue el momento exacto en que te diste cuenta de que te gustaba?', 'memories', '✨', 1),
 ('Si pudiéramos teletransportarnos a cualquier lugar del mundo durante 24 horas, ¿a dónde iríamos?', 'future', '✈️', 2),
@@ -144,3 +180,6 @@ CREATE INDEX IF NOT EXISTS idx_daily_answers_couple ON daily_answers(couple_id, 
 CREATE INDEX IF NOT EXISTS idx_memories_couple ON timeline_memories(couple_id);
 CREATE INDEX IF NOT EXISTS idx_bucket_couple ON bucket_list_items(couple_id);
 CREATE INDEX IF NOT EXISTS idx_letters_couple ON secret_letters(couple_id);
+CREATE INDEX IF NOT EXISTS idx_sticky_notes_couple ON sticky_notes(couple_id);
+CREATE INDEX IF NOT EXISTS idx_couple_calendar_couple ON couple_calendar(couple_id);
+CREATE INDEX IF NOT EXISTS idx_couple_places_couple ON couple_places(couple_id);

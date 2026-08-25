@@ -5,6 +5,9 @@ import { getTodayQuestion, answerQuestion, getAnswerHistory } from '../controlle
 import { createMemory, getMemories } from '../controllers/memories.controller';
 import { createBucketItem, getBucketList, toggleBucketItem } from '../controllers/bucket.controller';
 import { createSecretLetter, getLetters } from '../controllers/letters.controller';
+import { createStickyNote, getStickyNotes, deleteStickyNote } from '../controllers/sticky_notes.controller';
+import { createCalendarEvent, getCalendarEvents, deleteCalendarEvent } from '../controllers/calendar.controller';
+import { createPlace, getPlaces } from '../controllers/places.controller';
 import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
@@ -52,5 +55,19 @@ router.patch('/bucket/:id', toggleBucketItem);
 // Secret Letters & Time Capsule
 router.post('/letters', createSecretLetter);
 router.get('/letters', getLetters);
+
+// Sticky Notes (Post-its)
+router.get('/sticky-notes', getStickyNotes);
+router.post('/sticky-notes', createStickyNote);
+router.delete('/sticky-notes/:id', deleteStickyNote);
+
+// Couple Calendar
+router.get('/calendar', getCalendarEvents);
+router.post('/calendar', createCalendarEvent);
+router.delete('/calendar/:id', deleteCalendarEvent);
+
+// Romantic Places
+router.get('/places', getPlaces);
+router.post('/places', createPlace);
 
 export default router;
