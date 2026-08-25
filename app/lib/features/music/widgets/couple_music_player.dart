@@ -207,60 +207,52 @@ class CoupleMusicPlayer extends StatelessWidget {
 
                   const SizedBox(height: 14),
 
-                  // Bottom Action Buttons
-                  if (couple.loveSongUrl != null &&
-                      (couple.loveSongUrl!.contains('youtube.com') ||
-                          couple.loveSongUrl!.contains('youtu.be') ||
-                          couple.loveSongUrl!.contains('spotify.com')))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: couple.loveSongUrl!.contains('spotify.com') ? const Color(0xFF1DB954) : const Color(0xFFFF0000),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                          onPressed: () async {
-                            try {
-                              final uri = Uri.parse(couple.loveSongUrl!);
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                              }
-                            } catch (_) {}
-                          },
-                          icon: Icon(
-                            couple.loveSongUrl!.contains('spotify.com') ? Icons.music_note_rounded : Icons.play_circle_fill_rounded,
-                            color: Colors.white,
-                          ),
-                          label: Text(
-                            couple.loveSongUrl!.contains('spotify.com') ? 'Abrir y Escuchar en Spotify 🟢' : 'Abrir y Escuchar en YouTube 🔴',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                        ),
+                  // Main In-App Play/Pause Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryRose,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                    )
-                  else
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryRose,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: () {
-                          couple.togglePlaySong();
-                          setModalState(() {});
-                        },
-                        icon: Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
-                        label: Text(
-                          isPlaying ? 'Pausar Canción ⏸️' : 'Reproducir Mientras Lees 🎶▶️',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
+                      onPressed: () {
+                        couple.togglePlaySong();
+                        setModalState(() {});
+                      },
+                      icon: Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
+                      label: Text(
+                        isPlaying ? 'Pausar Reproducción ⏸️' : 'Reproducir Música en la App 🎶▶️',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
+                  ),
+
+                  // Optional external YouTube button
+                  if (couple.loveSongUrl != null &&
+                      (couple.loveSongUrl!.contains('youtube.com') ||
+                          couple.loveSongUrl!.contains('youtu.be'))) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 40,
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFFFF0000),
+                        ),
+                        onPressed: () async {
+                          try {
+                            final uri = Uri.parse(couple.loveSongUrl!);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          } catch (_) {}
+                        },
+                        icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
+                        label: const Text('Ver videoclip en YouTube', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             );
