@@ -261,7 +261,7 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
             _buildWidgetCard(
               context,
               title: '1. Contador de Días de Amor 💕',
-              subtitle: 'Contador romántico de días juntos y nombres de la pareja.',
+              subtitle: 'Banner compacto (2×1). Muestra los días juntos y sus nombres.',
               widgetPreview: _buildLoveCounterWidgetPreview(
                 userName,
                 partnerName,
@@ -274,7 +274,7 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
                 data: {
                   'couple_names': isPaired ? '$userName & $partnerName ♥' : '$userName & Mi Amor ♥',
                   'days_count': isPaired ? '${couple.daysTogether}' : '1',
-                  'days_label': 'DÍAS JUNTOS',
+                  'days_label': 'días juntos',
                 },
                 successName: 'Contador de Amor',
               ),
@@ -286,13 +286,13 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
             _buildWidgetCard(
               context,
               title: '2. Foto y Momento Locket 📸',
-              subtitle: 'Muestra fotos, recuerdos y notas compartidas con tu amor.',
+              subtitle: 'Widget cuadrado (1×1). Muestra el emoji y nombre de tu amor.',
               widgetPreview: _buildLocketWidgetPreview(partnerName),
               onAdd: () => _pinWidget(
                 context: context,
                 providerName: 'LocketWidgetProvider',
                 data: {
-                  'locket_title': '📸 $partnerName & Tú',
+                  'locket_title': '$partnerName 📸',
                   'locket_caption': 'Pensando en ti con amor 💕',
                 },
                 successName: 'Foto Locket',
@@ -305,7 +305,7 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
             _buildWidgetCard(
               context,
               title: '3. Mascota Virtual de Amor 🐾',
-              subtitle: 'Tu mascota creciendo en la pantalla de inicio con su nivel.',
+              subtitle: 'Widget cuadrado (1×1). Tu mascota en la pantalla con su nivel.',
               widgetPreview: _buildPetWidgetPreview(couple.petName, couple.petLevel),
               onAdd: () => _pinWidget(
                 context: context,
@@ -313,7 +313,7 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
                 data: {
                   'pet_name': couple.petName,
                   'pet_emoji': '🐶',
-                  'pet_level': 'Nivel ${couple.petLevel} · Amor Puro 💕',
+                  'pet_level': 'Niv.${couple.petLevel} 💕',
                 },
                 successName: 'Mascota Virtual',
               ),
@@ -325,7 +325,7 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
             _buildWidgetCard(
               context,
               title: '4. Nota de Amor / Post-it 💌',
-              subtitle: 'Personaliza el texto libremente para que aparezca en tu pantalla.',
+              subtitle: 'Banner compacto (2×1). Personaliza el mensaje para tu pantalla.',
               customAction: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.primaryRose,
@@ -341,7 +341,7 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
                 context: context,
                 providerName: 'StickyNoteWidgetProvider',
                 data: {
-                  'note_author': '💌 Nota de $partnerName',
+                  'note_author': 'Nota de $partnerName',
                   'note_content': _customNoteText,
                 },
                 successName: 'Nota de Amor',
@@ -424,30 +424,39 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
 
   Widget _buildLoveCounterWidgetPreview(String u1, String u2, int days, bool isPaired) {
     return Container(
-      width: 170,
-      height: 120,
-      padding: const EdgeInsets.all(12),
+      width: 200,
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         gradient: AppTheme.loveGradient,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            '$u1 & $u2 ♥',
-            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          const Text('❤️', style: TextStyle(fontSize: 22)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  isPaired ? '$days' : '♥',
+                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, height: 1.0),
+                ),
+                const Text(
+                  'días juntos',
+                  style: TextStyle(color: Colors.white70, fontSize: 9),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 2),
           Text(
-            isPaired ? '$days' : '♥',
-            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, height: 1.1),
-          ),
-          Text(
-            isPaired ? 'DÍAS JUNTOS' : 'HISTORIA DE AMOR',
-            style: const TextStyle(color: Colors.white70, fontSize: 8, letterSpacing: 1.2, fontWeight: FontWeight.bold),
+            '$u1 &\n$u2 ♥',
+            textAlign: TextAlign.right,
+            style: const TextStyle(color: Color(0xFFFFE0FF), fontSize: 8, fontWeight: FontWeight.bold),
+            maxLines: 2,
           ),
         ],
       ),
@@ -456,21 +465,25 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
 
   Widget _buildLocketWidgetPreview(String partner) {
     return Container(
-      width: 130,
-      height: 120,
-      padding: const EdgeInsets.all(10),
+      width: 80,
+      height: 80,
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         gradient: AppTheme.loveGradient,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('📸 Locket', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          const Text('💖', style: TextStyle(fontSize: 28)),
-          const SizedBox(height: 4),
-          Text('Foto de $partner', style: const TextStyle(color: Colors.white70, fontSize: 9)),
+          const Text('💖', style: TextStyle(fontSize: 24)),
+          const SizedBox(height: 2),
+          Text(
+            partner,
+            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const Text('Pensando en ti...', style: TextStyle(color: Colors.white70, fontSize: 7)),
         ],
       ),
     );
@@ -478,21 +491,25 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
 
   Widget _buildPetWidgetPreview(String petName, int level) {
     return Container(
-      width: 130,
-      height: 120,
-      padding: const EdgeInsets.all(10),
+      width: 80,
+      height: 80,
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         gradient: AppTheme.loveGradient,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(petName, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+          const Text('🐶', style: TextStyle(fontSize: 24)),
           const SizedBox(height: 2),
-          const Text('🐶', style: TextStyle(fontSize: 30)),
-          const SizedBox(height: 2),
-          Text('Nivel $level 💕', style: const TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.bold)),
+          Text(
+            petName,
+            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text('Niv.$level 💕', style: const TextStyle(color: Colors.white70, fontSize: 7)),
         ],
       ),
     );
@@ -500,27 +517,42 @@ class _WidgetsStudioScreenState extends State<WidgetsStudioScreen> {
 
   Widget _buildStickyNoteWidgetPreview(String partner, String text) {
     return Container(
-      width: 160,
-      height: 120,
-      padding: const EdgeInsets.all(12),
+      width: 200,
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         gradient: AppTheme.loveGradient,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text('💌 Nota de $partner', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Text(
-            text,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 11, fontStyle: FontStyle.italic, height: 1.2),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
+          const Text('💌', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Nota de $partner',
+                  style: const TextStyle(color: Color(0xFFFFE0FF), fontSize: 8, fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  text.replaceAll('"', ''),
+                  style: const TextStyle(color: Colors.white, fontSize: 9, fontStyle: FontStyle.italic, height: 1.2),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 }
+
