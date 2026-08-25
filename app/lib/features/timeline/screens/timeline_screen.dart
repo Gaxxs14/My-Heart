@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -298,6 +299,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
     );
   }
 
+  static final Map<String, Uint8List> _memoryBytesCache = {};
+
   Widget? _buildMemoryImage(dynamic photoUrls) {
     String? url;
     if (photoUrls is List && photoUrls.isNotEmpty) {
@@ -315,29 +318,52 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
     if (url == null || url.isEmpty) return null;
 
-    ImageProvider? provider;
+    Widget imageWidget;
     if (url.startsWith('data:image')) {
-      try {
-        final b64 = url.split(',').last;
-        provider = MemoryImage(base64Decode(b64));
-      } catch (_) {}
-    } else if (url.startsWith('http')) {
-      provider = NetworkImage(url);
-    } else if (url.startsWith('/')) {
-      provider = FileImage(File(url));
-    }
+      Uint8List? bytes = _memoryBytesCache[url];
+      if (bytes == null) {
+        try {
+          final b64 = url.split(',').last;
+          bytes = base64Decode(b64);
+          _memoryBytesCache[url] = bytes;
+        } catch (_) {}
+      }
 
-    if (provider == null) return null;
+      if (bytes == null) return null;
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      child: Image(
-        image: provider,
+      imageWidget = Image.memory(
+        bytes,
         height: 200,
         width: double.infinity,
         fit: BoxFit.cover,
+        gaplessPlayback: true,
         errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-      ),
+      );
+    } else if (url.startsWith('http')) {
+      imageWidget = Image.network(
+        url,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      );
+    } else if (url.startsWith('/')) {
+      imageWidget = Image.file(
+        File(url),
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      );
+    } else {
+      return null;
+    }
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: imageWidget,
     );
   }
 

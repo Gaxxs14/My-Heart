@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,6 +18,7 @@ class BucketListScreen extends StatefulWidget {
 }
 
 class _BucketListScreenState extends State<BucketListScreen> {
+  static final Map<String, Uint8List> _bucketBytesCache = {};
   final List<String> _dateIdeas = [
     'Noche de pizza casera viendo películas con mantitas 🍕🎬',
     'Pícnic sorpresa en el parque con sus snacks favoritos 🧺🍓',
@@ -274,17 +276,42 @@ class _BucketListScreenState extends State<BucketListScreen> {
                       final creatorName = item['creator_name'] ?? item['author_name'] ?? 'Tú';
                       final proofPhoto = item['proof_photo_url']?.toString();
 
-                      ImageProvider? proofImgProvider;
+                      Widget? proofImgWidget;
                       if (proofPhoto != null && proofPhoto.isNotEmpty) {
                         if (proofPhoto.startsWith('data:image')) {
-                          try {
-                            final b64 = proofPhoto.split(',').last;
-                            proofImgProvider = MemoryImage(base64Decode(b64));
-                          } catch (_) {}
+                          Uint8List? bytes = _bucketBytesCache[proofPhoto];
+                          if (bytes == null) {
+                            try {
+                              final b64 = proofPhoto.split(',').last;
+                              bytes = base64Decode(b64);
+                              _bucketBytesCache[proofPhoto] = bytes;
+                            } catch (_) {}
+                          }
+                          if (bytes != null) {
+                            proofImgWidget = Image.memory(
+                              bytes,
+                              height: 160,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              gaplessPlayback: true,
+                            );
+                          }
                         } else if (proofPhoto.startsWith('http')) {
-                          proofImgProvider = NetworkImage(proofPhoto);
+                          proofImgWidget = Image.network(
+                            proofPhoto,
+                            height: 160,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            gaplessPlayback: true,
+                          );
                         } else if (proofPhoto.startsWith('/')) {
-                          proofImgProvider = FileImage(File(proofPhoto));
+                          proofImgWidget = Image.file(
+                            File(proofPhoto),
+                            height: 160,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            gaplessPlayback: true,
+                          );
                         }
                       }
 
@@ -308,15 +335,10 @@ class _BucketListScreenState extends State<BucketListScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (proofImgProvider != null)
+                            if (proofImgWidget != null)
                               ClipRRect(
                                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                child: Image(
-                                  image: proofImgProvider,
-                                  height: 160,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
+                                child: proofImgWidget,
                               ),
                             Padding(
                               padding: const EdgeInsets.all(16),
