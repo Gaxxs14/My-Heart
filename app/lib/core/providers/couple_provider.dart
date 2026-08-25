@@ -4,10 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
+import '../services/notification_service.dart';
 
 class CoupleProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   final SocketService _socketService = SocketService();
+  final NotificationService _notificationService = NotificationService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -573,31 +575,69 @@ class CoupleProvider extends ChangeNotifier {
     switch (type) {
       case 'notes':
         loadStickyNotes();
+        _notificationService.showNotification(
+          title: '📝 Nueva Notita de Amor',
+          body: 'Tu pareja te dejó una notita en el muro de amor.',
+        );
         break;
       case 'calendar':
         loadCalendarEvents();
+        _notificationService.showNotification(
+          title: '📅 Nueva Fecha Especial',
+          body: 'Tu pareja añadió un evento al calendario.',
+        );
         break;
       case 'places':
         loadPlaces();
+        _notificationService.showNotification(
+          title: '📍 Nuevo Lugar Romántico',
+          body: 'Tu pareja añadió un nuevo lugar a su mapa de recuerdos.',
+        );
         break;
       case 'memories':
         loadMemories();
         fetchCoupleStatus();
+        _notificationService.showNotification(
+          title: '📸 Nuevo Recuerdo Compartido',
+          body: 'Tu pareja agregó un momento especial a su historia.',
+        );
         break;
       case 'bucket':
         loadBucketList();
         fetchCoupleStatus();
+        _notificationService.showNotification(
+          title: '🌟 Bucket List Actualizado',
+          body: 'Se actualizó una meta de su lista de deseos.',
+        );
         break;
       case 'letters':
         loadLetters();
+        _notificationService.showNotification(
+          title: '💌 Nueva Carta Secreta',
+          body: 'Tu pareja selló una carta en la cápsula del tiempo.',
+        );
         break;
       case 'question':
         loadTodayQuestion();
         fetchCoupleStatus();
+        _notificationService.showNotification(
+          title: '💬 Pregunta del Día Respondida',
+          body: '¡Tu pareja respondió la pregunta de hoy! Entra a ver su respuesta.',
+        );
         break;
       case 'pet':
+        fetchCoupleStatus();
+        _notificationService.showNotification(
+          title: '🐾 Tu Mascota está Feliz',
+          body: 'Tu pareja cuidó a su mascota virtual.',
+        );
+        break;
       case 'song':
         fetchCoupleStatus();
+        _notificationService.showNotification(
+          title: '🎵 Canción de Amor Actualizada',
+          body: 'Tu pareja actualizó la canción de su historia.',
+        );
         break;
       case 'all':
       default:
@@ -634,10 +674,21 @@ class CoupleProvider extends ChangeNotifier {
         userId: userId,
         coupleId: _coupleData!['id'],
         onHeartbeatReceived: (data) {
-          triggerHeartbeatReceived(data['senderName'] ?? 'Tu pareja');
+          final sender = data['senderName'] ?? 'Tu pareja';
+          triggerHeartbeatReceived(sender);
+          _notificationService.showNotification(
+            title: '💓 ¡Latido de Amor Recibido!',
+            body: '$sender te acaba de enviar un toque de amor.',
+          );
         },
         onPartnerMoodUpdated: (data) {
-          onPartnerMood(data['moodStatus'] ?? '', data['moodIcon'] ?? '🥰');
+          final mood = data['moodStatus'] ?? '';
+          final icon = data['moodIcon'] ?? '🥰';
+          onPartnerMood(mood, icon);
+          _notificationService.showNotification(
+            title: '$icon Estado de Ánimo',
+            body: 'Tu pareja ahora se siente: $mood',
+          );
         },
         onPartnerPresence: (data) {
           onPartnerOnline(data['is_online'] ?? false);

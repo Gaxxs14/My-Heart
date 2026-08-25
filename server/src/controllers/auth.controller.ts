@@ -320,3 +320,17 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const updateFcmToken = async (req: AuthRequest, res: Response) => {
+  const { fcm_token } = req.body;
+  const userId = req.user?.id;
+
+  try {
+    await pool.query('UPDATE users SET fcm_token = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [fcm_token, userId]);
+    return res.json({ message: 'Token de notificaciones push actualizado con éxito.' });
+  } catch (error) {
+    console.error('Error al actualizar fcm_token:', error);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+};
+
+

@@ -7,8 +7,11 @@ import 'features/auth/screens/login_screen.dart';
 import 'features/pairing/screens/pairing_screen.dart';
 import 'features/navigation/main_navigation_screen.dart';
 
+import 'core/services/notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
   runApp(const MyHeartApp());
 }
 
