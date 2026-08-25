@@ -31,6 +31,8 @@ class CoupleProvider extends ChangeNotifier {
   // Daily Sparks
   Map<String, dynamic>? _todayQuestion;
   bool _isLoadingQuestion = false;
+  List<dynamic> _questionHistory = [];
+  List<dynamic> get questionHistory => _questionHistory;
 
   // Memories & Timeline
   List<dynamic> _memories = [];
@@ -891,6 +893,17 @@ class CoupleProvider extends ChangeNotifier {
 
     _isLoadingQuestion = false;
     notifyListeners();
+  }
+
+  Future<void> loadAnswerHistory() async {
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+    try {
+      final res = await _apiService.get('/questions/history');
+      _questionHistory = res['history'] ?? [];
+      notifyListeners();
+    } catch (e) {
+      print('Error cargando historial de preguntas: $e');
+    }
   }
 
   Future<bool> answerTodayQuestion(String questionId, String answerText) async {

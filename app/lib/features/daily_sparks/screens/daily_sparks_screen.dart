@@ -80,6 +80,12 @@ class _DailySparksScreenState extends State<DailySparksScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.history_edu_rounded),
+            color: AppTheme.primaryRose,
+            tooltip: 'Historial de respuestas 📜',
+            onPressed: () => _showHistoryBottomSheet(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.casino_rounded),
             color: AppTheme.primaryRose,
             tooltip: 'Girar otra pregunta 🎲',
@@ -433,4 +439,171 @@ class _DailySparksScreenState extends State<DailySparksScreen> {
       ),
     );
   }
+
+  void _showHistoryBottomSheet(BuildContext context) {
+    final couple = Provider.of<CoupleProvider>(context, listen: false);
+    couple.loadAnswerHistory();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return Consumer<CoupleProvider>(
+          builder: (context, couple, _) {
+            final history = couple.questionHistory;
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.75,
+              minChildSize: 0.4,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (context, scrollController) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              gradient: AppTheme.loveGradient,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.history_edu_rounded, color: Colors.white, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Historial de Respuestas Reales 📜',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.deepWine,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (history.isEmpty)
+                        Expanded(
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Text('💌', style: TextStyle(fontSize: 40)),
+                                SizedBox(height: 10),
+                                Text(
+                                  'Aún no hay respuestas guardadas.\n¡Empiecen a responder preguntas juntos!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: AppTheme.textMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Expanded(
+                          child: ListView.separated(
+                            controller: scrollController,
+                            itemCount: history.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 16),
+                            itemBuilder: (context, index) {
+                              final item = history[index];
+                              final myAns = item['my_answer'];
+                              final partnerAns = item['partner_answer'];
+
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF9FA),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(color: const Color(0xFFFFE0E8)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(item['emoji'] ?? '💬', style: const TextStyle(fontSize: 20)),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            item['question_text'] ?? '',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: AppTheme.deepWine,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Divider(height: 20, color: Color(0xFFFFE0E8)),
+                                    // My Answer
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Tú: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryRose)),
+                                        Expanded(
+                                          child: Text(
+                                            myAns ?? '(Sin responder)',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: myAns != null ? AppTheme.textDark : Colors.grey,
+                                              fontStyle: myAns != null ? FontStyle.normal : FontStyle.italic,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Partner Answer
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Pareja: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF880E4F))),
+                                        Expanded(
+                                          child: Text(
+                                            partnerAns ?? '(Sin responder aún)',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: partnerAns != null ? AppTheme.textDark : Colors.grey,
+                                              fontStyle: partnerAns != null ? FontStyle.normal : FontStyle.italic,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
 }
+

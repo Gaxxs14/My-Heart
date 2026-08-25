@@ -85,19 +85,17 @@ class _CoupleGamesHubScreenState extends State<CoupleGamesHubScreen> {
     });
   }
 
+  final List<String> _userAnswers = [];
+
   void _answerQuiz(int index) {
-    if (index == _quizQuestions[_quizStep]['correct']) {
-      _quizScore++;
-    }
+    _userAnswers.add(_quizQuestions[_quizStep]['options'][index]);
+    _quizScore += 20;
 
     if (_quizStep + 1 < _quizQuestions.length) {
       setState(() => _quizStep++);
     } else {
       final couple = Provider.of<CoupleProvider>(context, listen: false);
-      if (couple.coupleData != null) {
-        couple.coupleData!['pet_xp'] = (couple.coupleData!['pet_xp'] as int) + 30;
-        couple.notifyListeners();
-      }
+      couple.addPetXp(30);
       setState(() => _quizFinished = true);
     }
   }
@@ -106,6 +104,7 @@ class _CoupleGamesHubScreenState extends State<CoupleGamesHubScreen> {
     setState(() {
       _quizStep = 0;
       _quizScore = 0;
+      _userAnswers.clear();
       _quizFinished = false;
     });
   }
@@ -214,13 +213,11 @@ class _CoupleGamesHubScreenState extends State<CoupleGamesHubScreen> {
 
   Widget _buildQuizGame(ThemeProvider theme) {
     if (_quizFinished) {
-      final percentage = ((_quizScore / _quizQuestions.length) * 100).toInt();
-
       return Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Center(
+        padding: const EdgeInsets.all(20.0),
+        child: SingleChildScrollView(
           child: Container(
-            padding: const EdgeInsets.all(26),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(28),
@@ -236,23 +233,59 @@ class _CoupleGamesHubScreenState extends State<CoupleGamesHubScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🏆', style: TextStyle(fontSize: 60)),
-                const SizedBox(height: 12),
+                const Text('🏆', style: TextStyle(fontSize: 50)),
+                const SizedBox(height: 10),
                 Text(
-                  '¡Quiz Completado!',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.secondaryColor),
+                  '¡Test de Conexión Completado!',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.secondaryColor),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Compatibilidad: $percentage%',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: theme.primaryColor),
+                  'Conexión: 100% 💕',
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: theme.primaryColor),
                 ),
-                Text(
-                  'Acertaste $_quizScore de ${_quizQuestions.length} preguntas (+30 XP para la mascota 🐾)',
+                const Text(
+                  'Tus respuestas sinceras (+30 XP para la mascota 🐾)',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                ...List.generate(_quizQuestions.length, (i) {
+                  final q = _quizQuestions[i];
+                  final ans = i < _userAnswers.length ? _userAnswers[i] : '';
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF9FA),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFFE0E8)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${i + 1}. ${q['question']}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF880E4F)),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Text('Respuesta: ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
+                            Expanded(
+                              child: Text(
+                                ans,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2B2B2B)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   height: 48,

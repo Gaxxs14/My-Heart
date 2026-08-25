@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS couples (
     love_song_title VARCHAR(255),
     love_song_artist VARCHAR(255),
     love_song_url TEXT,
+    current_question_id UUID,
     theme_palette VARCHAR(50) DEFAULT 'rose_gold',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
