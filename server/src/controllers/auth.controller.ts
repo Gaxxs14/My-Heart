@@ -311,9 +311,10 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
 
     // 3. Delete couple data and dependent records if couple exists
     if (couple_id) {
-      await pool.query('DELETE FROM memories WHERE couple_id = $1', [couple_id]);
+      await pool.query('DELETE FROM timeline_memories WHERE couple_id = $1', [couple_id]);
       await pool.query('DELETE FROM bucket_list_items WHERE couple_id = $1', [couple_id]);
-      await pool.query('DELETE FROM letters WHERE couple_id = $1', [couple_id]);
+      await pool.query('DELETE FROM secret_letters WHERE couple_id = $1', [couple_id]);
+      await pool.query('DELETE FROM sticky_notes WHERE couple_id = $1', [couple_id]);
       await pool.query('DELETE FROM daily_answers WHERE couple_id = $1', [couple_id]);
       await pool.query('DELETE FROM couples WHERE id = $1', [couple_id]);
     }

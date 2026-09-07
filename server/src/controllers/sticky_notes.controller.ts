@@ -19,8 +19,8 @@ export const createStickyNote = async (req: AuthRequest, res: Response) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO sticky_notes (couple_id, sender_id, content, color)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO sticky_notes (couple_id, sender_id, content, color, reactions)
+       VALUES ($1, $2, $3, $4, '[]'::jsonb)
        RETURNING *`,
       [coupleId, userId, content.trim(), color || 'pink']
     );
@@ -28,7 +28,7 @@ export const createStickyNote = async (req: AuthRequest, res: Response) => {
     await pool.query('UPDATE couples SET pet_xp = pet_xp + 10 WHERE id = $1', [coupleId]);
 
     const noteRes = await pool.query(
-      `SELECT n.*, COALESCE(u.nickname, u.name) as author_name
+      `SELECT n.*, COALESCE(n.reactions, '[]'::jsonb) as reactions, COALESCE(u.nickname, u.name) as author_name
        FROM sticky_notes n
        JOIN users u ON n.sender_id = u.id
        WHERE n.id = $1`,
@@ -57,7 +57,7 @@ export const getStickyNotes = async (req: AuthRequest, res: Response) => {
     }
 
     const result = await pool.query(
-      `SELECT n.*, COALESCE(u.nickname, u.name) as author_name
+      `SELECT n.*, COALESCE(n.reactions, '[]'::jsonb) as reactions, COALESCE(u.nickname, u.name) as author_name
        FROM sticky_notes n
        JOIN users u ON n.sender_id = u.id
        WHERE n.couple_id = $1
@@ -89,6 +89,75 @@ export const deleteStickyNote = async (req: AuthRequest, res: Response) => {
     return res.json({ message: 'Notita eliminada exitosamente.' });
   } catch (error) {
     console.error('Error al eliminar notita:', error);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+};
+
+export const reactToStickyNote = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { emoji } = req.body;
+  const userId = req.user?.id;
+
+  if (!emoji) {
+    return res.status(400).json({ error: 'Emoji de reacción es requerido.' });
+  }
+
+  try {
+    const userRes = await pool.query('SELECT couple_id, name, nickname FROM users WHERE id = $1', [userId]);
+    const coupleId = userRes.rows[0]?.couple_id;
+    const userName = userRes.rows[0]?.nickname || userRes.rows[0]?.name || 'Mi Amor';
+
+    if (!coupleId) {
+      return res.status(400).json({ error: 'Debes pertenecer a una pareja.' });
+    }
+
+    const noteRes = await pool.query('SELECT id, reactions FROM sticky_notes WHERE id = $1 AND couple_id = $2', [id, coupleId]);
+    if (noteRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Notita no encontrada.' });
+    }
+
+    let reactions: any[] = noteRes.rows[0].reactions || [];
+    if (!Array.isArray(reactions)) {
+      try {
+        reactions = typeof reactions === 'string' ? JSON.parse(reactions) : [];
+      } catch (_) {
+        reactions = [];
+      }
+    }
+
+    // Check if user already reacted with this emoji
+    const existingIndex = reactions.findIndex((r) => r.user_id === userId);
+    if (existingIndex >= 0) {
+      if (reactions[existingIndex].emoji === emoji) {
+        // Toggle off
+        reactions.splice(existingIndex, 1);
+      } else {
+        // Change reaction
+        reactions[existingIndex] = {
+          user_id: userId,
+          user_name: userName,
+          emoji,
+          updated_at: new Date().toISOString(),
+        };
+      }
+    } else {
+      // Add new reaction
+      reactions.push({
+        user_id: userId,
+        user_name: userName,
+        emoji,
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    await pool.query('UPDATE sticky_notes SET reactions = $1 WHERE id = $2', [JSON.stringify(reactions), id]);
+
+    return res.json({
+      message: 'Reacción actualizada con éxito 💕',
+      reactions,
+    });
+  } catch (error) {
+    console.error('Error al reaccionar a notita:', error);
     return res.status(500).json({ error: 'Error interno del servidor.' });
   }
 };

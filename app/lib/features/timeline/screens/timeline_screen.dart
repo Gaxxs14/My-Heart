@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_provider.dart';
+import '../../../core/widgets/emoji_reaction_bar.dart';
 
 class TimelineScreen extends StatefulWidget {
   const TimelineScreen({super.key});
@@ -443,6 +445,34 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       style: const TextStyle(fontSize: 11, color: AppTheme.textMuted, fontStyle: FontStyle.italic),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFFFE3E8)),
+                const SizedBox(height: 10),
+                Consumer2<AuthProvider, CoupleProvider>(
+                  builder: (context, auth, couple, _) {
+                    final currentUserId = auth.currentUser?['id'];
+                    final currentUserName = auth.currentUser?['nickname'] ?? auth.currentUser?['name'] ?? 'Tú';
+
+                    List<dynamic> reactions = [];
+                    if (item['reactions'] is List) {
+                      reactions = item['reactions'];
+                    }
+
+                    return EmojiReactionBar(
+                      reactions: reactions,
+                      currentUserId: currentUserId,
+                      availableEmojis: const ['❤️', '🥰', '😍', '🥺', '🔥', '✨', '📸'],
+                      onReact: (emoji) {
+                        couple.reactToMemory(
+                          item['id'],
+                          emoji,
+                          currentUserId: currentUserId,
+                          currentUserName: currentUserName,
+                        );
+                      },
+                    );
+                  },
                 ),
               ],
             ),

@@ -2,10 +2,10 @@ import { Router } from 'express';
 import { register, login, quickStart, quickLink, getProfile, updateProfile, updateMood, deleteAccount, updateFcmToken } from '../controllers/auth.controller';
 import { getPairingStatus, createPairingCode, linkPartnerByCode, updateCoupleSettings } from '../controllers/couple.controller';
 import { getTodayQuestion, answerQuestion, getAnswerHistory } from '../controllers/questions.controller';
-import { createMemory, getMemories } from '../controllers/memories.controller';
+import { createMemory, getMemories, reactToMemory } from '../controllers/memories.controller';
 import { createBucketItem, getBucketList, toggleBucketItem } from '../controllers/bucket.controller';
-import { createSecretLetter, getLetters } from '../controllers/letters.controller';
-import { createStickyNote, getStickyNotes, deleteStickyNote } from '../controllers/sticky_notes.controller';
+import { createSecretLetter, getLetters, reactToLetter } from '../controllers/letters.controller';
+import { createStickyNote, getStickyNotes, deleteStickyNote, reactToStickyNote } from '../controllers/sticky_notes.controller';
 import { createCalendarEvent, getCalendarEvents, deleteCalendarEvent } from '../controllers/calendar.controller';
 import { createPlace, getPlaces } from '../controllers/places.controller';
 import { authenticateToken } from '../middleware/auth';
@@ -47,6 +47,7 @@ router.get('/questions/history', getAnswerHistory);
 // Timeline & Memories
 router.post('/memories', createMemory);
 router.get('/memories', getMemories);
+router.post('/memories/:id/react', reactToMemory);
 
 // Bucket List
 router.post('/bucket', createBucketItem);
@@ -56,11 +57,13 @@ router.patch('/bucket/:id', toggleBucketItem);
 // Secret Letters & Time Capsule
 router.post('/letters', createSecretLetter);
 router.get('/letters', getLetters);
+router.post('/letters/:id/react', reactToLetter);
 
 // Sticky Notes (Post-its)
 router.get('/sticky-notes', getStickyNotes);
 router.post('/sticky-notes', createStickyNote);
 router.delete('/sticky-notes/:id', deleteStickyNote);
+router.post('/sticky-notes/:id/react', reactToStickyNote);
 
 // Couple Calendar
 router.get('/calendar', getCalendarEvents);

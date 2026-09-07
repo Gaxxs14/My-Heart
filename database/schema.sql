@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS timeline_memories (
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
     is_favorite BOOLEAN DEFAULT false,
+    reactions JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -118,6 +119,7 @@ CREATE TABLE IF NOT EXISTS secret_letters (
     unlock_mood VARCHAR(100), -- 'sad', 'missing_you', 'anniversary', 'angry'
     is_opened BOOLEAN DEFAULT false,
     opened_at TIMESTAMP WITH TIME ZONE,
+    reactions JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -137,6 +139,7 @@ CREATE TABLE IF NOT EXISTS sticky_notes (
     sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     color VARCHAR(30) DEFAULT 'pink',
+    reactions JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

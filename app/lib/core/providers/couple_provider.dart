@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -508,6 +509,69 @@ class CoupleProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('Error eliminando nota: $e');
+    }
+  }
+
+  List<dynamic> _toggleReactionInList(List<dynamic> list, String id, String emoji, String? userId, String? userName) {
+    return list.map((item) {
+      if (item['id'] == id) {
+        final Map<String, dynamic> updatedItem = Map<String, dynamic>.from(item);
+        List<dynamic> reactions = [];
+        if (updatedItem['reactions'] is List) {
+          reactions = List<dynamic>.from(updatedItem['reactions']);
+        } else if (updatedItem['reactions'] is String) {
+          try {
+            reactions = List<dynamic>.from(jsonDecode(updatedItem['reactions']));
+          } catch (_) {}
+        }
+
+        final existingIndex = reactions.indexWhere((r) => r is Map && r['user_id'] == userId);
+        if (existingIndex >= 0) {
+          if (reactions[existingIndex]['emoji'] == emoji) {
+            reactions.removeAt(existingIndex);
+          } else {
+            reactions[existingIndex] = {
+              'user_id': userId,
+              'user_name': userName ?? 'Tú',
+              'emoji': emoji,
+              'updated_at': DateTime.now().toIso8601String(),
+            };
+          }
+        } else {
+          reactions.add({
+            'user_id': userId,
+            'user_name': userName ?? 'Tú',
+            'emoji': emoji,
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+        }
+        updatedItem['reactions'] = reactions;
+        return updatedItem;
+      }
+      return item;
+    }).toList();
+  }
+
+  Future<void> reactToStickyNote(String id, String emoji, {String? currentUserId, String? currentUserName}) async {
+    _stickyNotes = _toggleReactionInList(_stickyNotes, id, emoji, currentUserId, currentUserName);
+    notifyListeners();
+
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+
+    try {
+      final res = await _apiService.post('/sticky-notes/$id/react', {'emoji': emoji});
+      if (res['reactions'] != null) {
+        final index = _stickyNotes.indexWhere((n) => n['id'] == id);
+        if (index != -1) {
+          _stickyNotes[index]['reactions'] = res['reactions'];
+          notifyListeners();
+        }
+      }
+      if (_coupleData?['id'] != null) {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'notes');
+      }
+    } catch (e) {
+      print('Error al reaccionar a notita: $e');
     }
   }
 
@@ -1028,6 +1092,29 @@ class CoupleProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> reactToMemory(String id, String emoji, {String? currentUserId, String? currentUserName}) async {
+    _memories = _toggleReactionInList(_memories, id, emoji, currentUserId, currentUserName);
+    notifyListeners();
+
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+
+    try {
+      final res = await _apiService.post('/memories/$id/react', {'emoji': emoji});
+      if (res['reactions'] != null) {
+        final index = _memories.indexWhere((m) => m['id'] == id);
+        if (index != -1) {
+          _memories[index]['reactions'] = res['reactions'];
+          notifyListeners();
+        }
+      }
+      if (_coupleData?['id'] != null) {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'memories');
+      }
+    } catch (e) {
+      print('Error al reaccionar a recuerdo: $e');
+    }
+  }
+
   // Bucket List
   Future<void> loadBucketList() async {
     if (_coupleData?['id'] == 'demo-couple-1') return;
@@ -1163,6 +1250,29 @@ class CoupleProvider extends ChangeNotifier {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<void> reactToLetter(String id, String emoji, {String? currentUserId, String? currentUserName}) async {
+    _letters = _toggleReactionInList(_letters, id, emoji, currentUserId, currentUserName);
+    notifyListeners();
+
+    if (_coupleData?['id'] == 'demo-couple-1') return;
+
+    try {
+      final res = await _apiService.post('/letters/$id/react', {'emoji': emoji});
+      if (res['reactions'] != null) {
+        final index = _letters.indexWhere((l) => l['id'] == id);
+        if (index != -1) {
+          _letters[index]['reactions'] = res['reactions'];
+          notifyListeners();
+        }
+      }
+      if (_coupleData?['id'] != null) {
+        _socketService.emitDataChanged(coupleId: _coupleData!['id'], type: 'letters');
+      }
+    } catch (e) {
+      print('Error al reaccionar a carta: $e');
     }
   }
 

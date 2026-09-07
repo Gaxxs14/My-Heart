@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/couple_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/emoji_reaction_bar.dart';
 
 class SecretLettersScreen extends StatefulWidget {
   const SecretLettersScreen({super.key});
@@ -197,6 +199,15 @@ class _SecretLettersScreenState extends State<SecretLettersScreen> {
                           ? DateFormat('dd MMM yyyy').format(DateTime.tryParse(unlockDateStr) ?? DateTime.now())
                           : '';
 
+                      final auth = Provider.of<AuthProvider>(context, listen: false);
+                      final currentUserId = auth.currentUser?['id'];
+                      final currentUserName = auth.currentUser?['nickname'] ?? auth.currentUser?['name'] ?? 'Tú';
+
+                      List<dynamic> reactions = [];
+                      if (letter['reactions'] is List) {
+                        reactions = letter['reactions'];
+                      }
+
                       return Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(20),
@@ -219,7 +230,7 @@ class _SecretLettersScreenState extends State<SecretLettersScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'De: ${letter['sender_name'] ?? 'Tu pareja'}',
+                                  'De: ${letter['sender_name'] ?? 'Tu pareja'} 💌',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppTheme.primaryRose,
@@ -264,11 +275,28 @@ class _SecretLettersScreenState extends State<SecretLettersScreen> {
                                   style: TextStyle(fontSize: 13, color: Colors.brown, fontStyle: FontStyle.italic),
                                 ),
                               )
-                            else
+                            else ...[
                               Text(
                                 letter['content'] ?? '',
                                 style: const TextStyle(fontSize: 15, color: AppTheme.textDark, height: 1.4),
                               ),
+                              const SizedBox(height: 14),
+                              const Divider(height: 1, color: Color(0xFFFFE3E8)),
+                              const SizedBox(height: 10),
+                              EmojiReactionBar(
+                                reactions: reactions,
+                                currentUserId: currentUserId,
+                                availableEmojis: const ['❤️', '🥰', '💌', '🥺', '✨', '😭', '🔥'],
+                                onReact: (emoji) {
+                                  couple.reactToLetter(
+                                    letter['id'],
+                                    emoji,
+                                    currentUserId: currentUserId,
+                                    currentUserName: currentUserName,
+                                  );
+                                },
+                              ),
+                            ],
                           ],
                         ),
                       );
