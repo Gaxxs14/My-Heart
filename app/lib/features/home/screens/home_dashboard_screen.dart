@@ -30,7 +30,17 @@ class HomeDashboardScreen extends StatelessWidget {
     final auth  = Provider.of<AuthProvider>(context, listen: false);
     final theme = Provider.of<ThemeProvider>(context, listen: false);
 
-    final moods = [
+    final currentMood = auth.currentUser?['mood_status'] ?? 'Enamorado/a 🥰';
+    final currentIcon = auth.currentUser?['mood_icon'] ?? '🥰';
+
+    final textController = TextEditingController(text: currentMood);
+    String selectedIcon = currentIcon;
+
+    final emojiList = [
+      '🥰', '💭', '🥺', '❤️', '😊', '😴', '🔥', '🍕', '💻', '😭', '✨', '🍷', '🤗', '🏖️', '🎮', '💖'
+    ];
+
+    final presetMoods = [
       {'status': 'Enamorado/a 🥰',         'icon': '🥰'},
       {'status': 'Pensando en ti 💭',       'icon': '💭'},
       {'status': 'Te extraño mucho 🥺',    'icon': '🥺'},
@@ -39,48 +49,217 @@ class HomeDashboardScreen extends StatelessWidget {
       {'status': 'Cansado/a pero feliz 😴', 'icon': '😴'},
       {'status': 'Listo/a para una cita 🍷','icon': '🍷'},
       {'status': 'Abrazable 🤗',            'icon': '🤗'},
+      {'status': 'Jugando un rato 🎮',      'icon': '🎮'},
+      {'status': 'Descansando 🏖️',          'icon': '🏖️'},
     ];
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
       backgroundColor: Colors.white,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-        child: Column(
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36, height: 4,
+                      decoration: BoxDecoration(color: AppTheme.blushPink, borderRadius: BorderRadius.circular(2)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '¿Cómo te sientes hoy? ✍️💫',
+                        style: TextStyle(color: theme.secondaryColor, fontWeight: FontWeight.w700, fontSize: 17),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Custom text input
+                  TextField(
+                    controller: textController,
+                    maxLength: 100,
+                    decoration: InputDecoration(
+                      labelText: 'Escribe tu estado de ánimo personalizado',
+                      hintText: 'Ej. Pensando en ti y deseando verte 💕',
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(selectedIcon, style: const TextStyle(fontSize: 22)),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFFFF7F9),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(color: Color(0xFFFFE3E8)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(color: Color(0xFFFFE3E8)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(color: AppTheme.primaryRose, width: 1.5),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+                  const Text('Elige tu emoji de ánimo:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 8),
+
+                  // Emoji selector tray
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: emojiList.map((emoji) {
+                        final isSelected = emoji == selectedIcon;
+                        return GestureDetector(
+                          onTap: () {
+                            setModalState(() => selectedIcon = emoji);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppTheme.softPink : const Color(0xFFF7F7F7),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? AppTheme.primaryRose : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: Text(emoji, style: const TextStyle(fontSize: 20)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                  const Text('O elige una opción rápida:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 8),
+
+                  // Quick presets
+                  Wrap(
+                    spacing: 8, runSpacing: 8,
+                    children: presetMoods.map((m) => ActionChip(
+                      avatar: Text(m['icon']!, style: const TextStyle(fontSize: 16)),
+                      label: Text(m['status']!),
+                      backgroundColor: theme.softAccentColor.withOpacity(0.3),
+                      labelStyle: TextStyle(color: theme.secondaryColor, fontWeight: FontWeight.w600, fontSize: 12),
+                      shape: StadiumBorder(side: BorderSide(color: theme.softAccentColor, width: 1)),
+                      onPressed: () {
+                        setModalState(() {
+                          textController.text = m['status']!;
+                          selectedIcon = m['icon']!;
+                        });
+                      },
+                    )).toList(),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Save mood button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryRose,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      ),
+                      onPressed: () {
+                        final status = textController.text.trim().isNotEmpty
+                            ? textController.text.trim()
+                            : 'Enamorado/a 🥰';
+                        auth.updateMood(status, selectedIcon);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('$selectedIcon ¡Estado actualizado: "$status"! 💕'),
+                            backgroundColor: AppTheme.primaryRose,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      child: const Text('Guardar Mi Estado 💕', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showPartnerMoodDialog(BuildContext context, Map<String, dynamic> partner, ThemeProvider theme) {
+    final partnerName = partner['nickname'] ?? partner['name'] ?? 'Mi Amor';
+    final partnerMood = partner['mood_status'] ?? 'Pensando en ti 💭';
+    final partnerIcon = partner['mood_icon'] ?? '💭';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Text(partnerIcon, style: const TextStyle(fontSize: 26)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Estado de $partnerName 💕',
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.deepWine),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                decoration: BoxDecoration(color: AppTheme.blushPink, borderRadius: BorderRadius.circular(2)),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7F9),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFFE3E8)),
+              ),
+              child: Text(
+                '"$partnerMood"',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF2B2B2B), height: 1.4),
               ),
             ),
-            const SizedBox(height: 16),
-            Text('¿Cómo te sientes ahora? 💫',
-                style: TextStyle(color: theme.secondaryColor, fontWeight: FontWeight.w700, fontSize: 17)),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8, runSpacing: 8,
-              children: moods.map((m) => ActionChip(
-                avatar: Text(m['icon']!, style: const TextStyle(fontSize: 16)),
-                label: Text(m['status']!),
-                backgroundColor: theme.softAccentColor.withOpacity(0.4),
-                labelStyle: TextStyle(color: theme.secondaryColor, fontWeight: FontWeight.w600, fontSize: 12),
-                shape: StadiumBorder(side: BorderSide(color: theme.softAccentColor, width: 1)),
-                onPressed: () {
-                  auth.updateMood(m['status']!, m['icon']!);
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Estado: ${m['status']}')),
-                  );
-                },
-              )).toList(),
-            ),
-            const SizedBox(height: 8),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cerrar', style: TextStyle(color: AppTheme.primaryRose, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -525,14 +704,17 @@ class HomeDashboardScreen extends StatelessWidget {
           ),
           _buildHeartBridge(context, couple, auth, theme),
           if (isPaired && partner != null && partner['id'] != null)
-            _buildAvatar(
-              name: partner['nickname'] ?? partner['name'] ?? 'Mi Amor',
-              avatarUrl: partner['avatar_url'],
-              mood: partner['mood_status'] ?? 'Pensando en ti 💭',
-              icon: partner['mood_icon'] ?? '💭',
-              isMe: false,
-              isOnline: partner['is_online'] ?? true,
-              theme: theme,
+            GestureDetector(
+              onTap: () => _showPartnerMoodDialog(context, partner, theme),
+              child: _buildAvatar(
+                name: partner['nickname'] ?? partner['name'] ?? 'Mi Amor',
+                avatarUrl: partner['avatar_url'],
+                mood: partner['mood_status'] ?? 'Pensando en ti 💭',
+                icon: partner['mood_icon'] ?? '💭',
+                isMe: false,
+                isOnline: partner['is_online'] ?? true,
+                theme: theme,
+              ),
             )
           else
             _buildUnpairedPartnerAvatar(context, theme),
@@ -839,13 +1021,13 @@ class HomeDashboardScreen extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Container(
-          constraints: const BoxConstraints(maxWidth: 110),
+          constraints: const BoxConstraints(maxWidth: 125),
           child: Text(
             mood,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+            style: const TextStyle(fontSize: 11, color: AppTheme.textMuted, height: 1.15),
           ),
         ),
         if (isMe)
